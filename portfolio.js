@@ -24,6 +24,8 @@ const fragmentShaderSource = `
     uniform float u_expand;
     uniform float u_dissolveProgress;
     uniform vec2 u_resolution;
+    uniform vec2 u_cardSize;
+    uniform vec2 u_cardPos;
     
     varying vec2 v_texCoord;
     
@@ -46,6 +48,11 @@ const fragmentShaderSource = `
         return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
     }
     
+    // Rounded rectangle SDF
+    float roundedRectSDF(vec2 centerPos, vec2 size, float radius) {
+        return length(max(abs(centerPos) - size + radius, 0.0)) - radius;
+    }
+    
     void main() {
         vec4 texColor = texture2D(u_texture, v_texCoord);
         vec4 solidColor = u_color;
@@ -55,6 +62,14 @@ const fragmentShaderSource = `
         // Add hover effect
         float brightness = 1.0 + u_hover * 0.2;
         baseColor.rgb *= brightness;
+        
+        // Calculate rounded corners
+        vec2 pixelPos = v_texCoord * u_cardSize;
+        vec2 centerPos = pixelPos - u_cardSize * 0.5;
+        float cornerRadius = 20.0; // 20 pixel radius
+        float distance = roundedRectSDF(centerPos, u_cardSize * 0.5, cornerRadius);
+        float smoothing = 1.0;
+        float cornerAlpha = 1.0 - smoothstep(0.0, smoothing, distance);
         
         // Reverse dissolve effect (1.0 - progress for reverse)
         float dissolveAmount = 1.0 - u_dissolveProgress;
@@ -74,7 +89,7 @@ const fragmentShaderSource = `
         
         // Apply dissolve
         baseColor.rgb += edgeColor * (1.0 - dissolveMask);
-        baseColor.a *= dissolveMask;
+        baseColor.a *= dissolveMask * cornerAlpha;
         
         gl_FragColor = baseColor;
     }
@@ -171,6 +186,8 @@ class Portfolio {
         this.expandLocation = gl.getUniformLocation(this.program, 'u_expand');
         this.dissolveProgressLocation = gl.getUniformLocation(this.program, 'u_dissolveProgress');
         this.resolutionLocation = gl.getUniformLocation(this.program, 'u_resolution');
+        this.cardSizeLocation = gl.getUniformLocation(this.program, 'u_cardSize');
+        this.cardPosLocation = gl.getUniformLocation(this.program, 'u_cardPos');
         
         // Create buffers
         this.positionBuffer = gl.createBuffer();
@@ -596,6 +613,8 @@ class Portfolio {
         gl.uniform1f(this.expandLocation, expand);
         gl.uniform1f(this.dissolveProgressLocation, dissolveProgress || 1.0);
         gl.uniform2f(this.resolutionLocation, canvas.width, canvas.height);
+        gl.uniform2f(this.cardSizeLocation, width, height);
+        gl.uniform2f(this.cardPosLocation, x, y);
         
         // Draw
         gl.drawArrays(gl.TRIANGLES, 0, 6);
