@@ -63,13 +63,30 @@ const fragmentShaderSource = `
         float brightness = 1.0 + u_hover * 0.2;
         baseColor.rgb *= brightness;
         
-        // Calculate rounded corners
+        // Calculate rounded corners and border
         vec2 pixelPos = v_texCoord * u_cardSize;
         vec2 centerPos = pixelPos - u_cardSize * 0.5;
         float cornerRadius = 20.0; // 20 pixel radius
-        float distance = roundedRectSDF(centerPos, u_cardSize * 0.5, cornerRadius);
+        float borderWidth = 2.0; // 2 pixel border
+        
+        // Outer edge distance
+        float outerDistance = roundedRectSDF(centerPos, u_cardSize * 0.5, cornerRadius);
+        // Inner edge distance (for border)
+        float innerDistance = roundedRectSDF(centerPos, u_cardSize * 0.5 - borderWidth, cornerRadius - borderWidth);
+        
+        // Create border mask
         float smoothing = 1.0;
-        float cornerAlpha = 1.0 - smoothstep(0.0, smoothing, distance);
+        float outerAlpha = 1.0 - smoothstep(0.0, smoothing, outerDistance);
+        float innerAlpha = 1.0 - smoothstep(0.0, smoothing, innerDistance);
+        float borderAlpha = outerAlpha - innerAlpha;
+        
+        // For background rectangles, use border only
+        if (u_useTexture < 0.5) {
+            baseColor.a *= borderAlpha;
+        } else {
+            // For text, keep it solid within the card bounds
+            baseColor.a *= outerAlpha;
+        }
         
         // Reverse dissolve effect (1.0 - progress for reverse)
         float dissolveAmount = 1.0 - u_dissolveProgress;
@@ -89,7 +106,7 @@ const fragmentShaderSource = `
         
         // Apply dissolve
         baseColor.rgb += edgeColor * (1.0 - dissolveMask);
-        baseColor.a *= dissolveMask * cornerAlpha;
+        baseColor.a *= dissolveMask;
         
         gl_FragColor = baseColor;
     }
