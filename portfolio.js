@@ -84,11 +84,14 @@ const fragmentShaderSource = `
         if (u_useTexture < 0.5) {
             // Black background with 0.1 opacity inside the card
             vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.1);
-            // White border
-            vec4 whiteBorder = vec4(1.0, 1.0, 1.0, 1.0);
+            // Border color - transitions from white to cyan-blue on hover
+            vec3 normalBorderColor = vec3(1.0, 1.0, 1.0);
+            vec3 hoverBorderColor = vec3(0.0, 0.8, 1.0); // Cyan-blue
+            vec3 borderColor = mix(normalBorderColor, hoverBorderColor, u_hover);
+            vec4 border = vec4(borderColor, 1.0);
             
             // Mix between background and border
-            baseColor = mix(blackBackground, whiteBorder, borderAlpha);
+            baseColor = mix(blackBackground, border, borderAlpha);
             baseColor.a *= outerAlpha;
         } else {
             // For text, keep it solid within the card bounds
