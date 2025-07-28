@@ -108,6 +108,11 @@ const fragmentShaderSource = `
         baseColor.rgb += edgeColor * (1.0 - dissolveMask);
         baseColor.a *= dissolveMask;
         
+        // Discard pixels with very low alpha to prevent artifacts
+        if (baseColor.a < 0.01) {
+            discard;
+        }
+        
         gl_FragColor = baseColor;
     }
 `;
@@ -283,6 +288,9 @@ class Portfolio {
                 textTexture: null,
                 dissolveProgress: 0,
                 dissolveDelay: (col * 0.1 + row * 0.2), // Staggered appearance
+                pageOpenStarted: false,
+                cardDissolveProgress: 1.0, // For card click dissolve
+                targetCardDissolveProgress: 1.0,
                 initialized: false
             });
         });
@@ -361,16 +369,34 @@ class Portfolio {
         this.canvas.addEventListener('click', (e) => {
             if (this.hoveredCard) {
                 if (this.expandedCard === this.hoveredCard) {
+                    // Closing the expanded card - reverse dissolve others
                     this.lastExpandedCard = this.expandedCard;
                     this.expandedCard = null;
+                    this.cards.forEach(card => {
+                        if (card !== this.lastExpandedCard) {
+                            card.targetCardDissolveProgress = 1.0; // Reverse dissolve
+                        }
+                    });
                 } else {
+                    // Opening a new card - dissolve others
                     this.expandedCard = this.hoveredCard;
                     this.lastExpandedCard = this.hoveredCard;
+                    this.cards.forEach(card => {
+                        if (card !== this.expandedCard) {
+                            card.targetCardDissolveProgress = 0.0; // Dissolve
+                        }
+                    });
                 }
                 this.updateCardPositions();
             } else if (this.expandedCard) {
+                // Clicking outside - close expanded card and reverse dissolve
                 this.lastExpandedCard = this.expandedCard;
                 this.expandedCard = null;
+                this.cards.forEach(card => {
+                    if (card !== this.lastExpandedCard) {
+                        card.targetCardDissolveProgress = 1.0; // Reverse dissolve
+                    }
+                });
                 this.updateCardPositions();
             }
         });
@@ -476,11 +502,21 @@ class Portfolio {
             card.hover += (card.targetHover - card.hover) * 0.1;
             card.expand += (card.targetExpand - card.expand) * 0.1;
             
-            // Update dissolve progress
+            // Update page open dissolve progress
             const dissolveStartTime = card.dissolveDelay;
-            const dissolveDuration = 1.0; // 1 second dissolve
-            const elapsedTime = this.animationTime - dissolveStartTime;
-            card.dissolveProgress = Math.min(1.0, Math.max(0.0, elapsedTime / dissolveDuration));
+            const dissolveDuration = 0.67; // ~0.67 seconds (50% faster than 1 second)
+            
+            if (this.animationTime >= dissolveStartTime) {
+                card.pageOpenStarted = true;
+                const elapsedTime = this.animationTime - dissolveStartTime;
+                card.dissolveProgress = Math.min(1.0, Math.max(0.0, elapsedTime / dissolveDuration));
+            } else {
+                // Keep card invisible until its animation starts
+                card.dissolveProgress = 0;
+            }
+            
+            // Update card click dissolve progress
+            card.cardDissolveProgress += (card.targetCardDissolveProgress - card.cardDissolveProgress) * 0.15; // 50% faster
         });
         
         // Clear lastExpandedCard when animation is complete
@@ -518,7 +554,8 @@ class Portfolio {
         
         // Draw all cards except the top card
         this.cards.forEach(card => {
-            if (card !== topCard) {
+            // Skip rendering if card is fully dissolved out
+            if (card !== topCard && card.pageOpenStarted && card.cardDissolveProgress > 0.01) {
                 // Apply dimming to background color
                 const dimmedColor = card.project.color.map((c, i) => 
                     i < 3 ? c * (1 - dimmingFactor) : c
@@ -532,7 +569,7 @@ class Portfolio {
                     card.hover,
                     card.expand,
                     false,
-                    card.dissolveProgress
+                    card.dissolveProgress * card.cardDissolveProgress
                 );
                 
                 // Draw text with dimming
@@ -550,13 +587,13 @@ class Portfolio {
                     card.hover,
                     card.expand,
                     true,
-                    card.dissolveProgress
+                    card.dissolveProgress * card.cardDissolveProgress
                 );
             }
         });
         
         // Draw the top card last
-        if (topCard) {
+        if (topCard && topCard.pageOpenStarted) {
             // Draw card background
             this.drawRect(
                 topCard.x, topCard.y,
