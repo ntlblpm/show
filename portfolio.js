@@ -442,7 +442,7 @@ class Portfolio {
         const titleSize = 32 + (48 - 32) * expandProgress;
         const titleY = canvas.height * (0.5 - 0.3 * expandProgress);
         
-        ctx.font = `bold ${titleSize}px -apple-system, sans-serif`;
+        ctx.font = `${titleSize}px 'ProFontWindows', monospace`;
         ctx.fillStyle = 'white';
         ctx.fillText(card.project.title, canvas.width / 2, titleY);
         
@@ -451,14 +451,14 @@ class Portfolio {
         const techY = canvas.height * (0.7 - 0.1 * expandProgress);
         
         if (techOpacity > 0) {
-            ctx.font = `${18}px -apple-system, sans-serif`;
+            ctx.font = `${18}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * techOpacity})`;
             ctx.fillText(card.project.tech, canvas.width / 2, techY);
         }
         
         // Description - fade in during expansion
         if (descriptionOpacity > 0) {
-            ctx.font = `${24}px -apple-system, sans-serif`;
+            ctx.font = `${24}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
             
             // Wrap description
@@ -482,7 +482,7 @@ class Portfolio {
             ctx.fillText(line, canvas.width / 2, y);
             
             // Tech stack in expanded view
-            ctx.font = `${20}px -apple-system, sans-serif`;
+            ctx.font = `${20}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * descriptionOpacity})`;
             ctx.fillText(card.project.tech, canvas.width / 2, canvas.height * 0.7);
         }
