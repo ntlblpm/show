@@ -298,6 +298,8 @@ class Portfolio {
                 pageOpenStarted: false,
                 cardDissolveProgress: 1.0, // For card click dissolve
                 targetCardDissolveProgress: 1.0,
+                cardDissolveStartTime: 0,
+                cardDissolveDelay: 0,
                 initialized: false
             });
         });
@@ -379,9 +381,12 @@ class Portfolio {
                     // Closing the expanded card - reverse dissolve others
                     this.lastExpandedCard = this.expandedCard;
                     this.expandedCard = null;
+                    const currentTime = this.animationTime;
                     this.cards.forEach(card => {
                         if (card !== this.lastExpandedCard) {
                             card.targetCardDissolveProgress = 1.0; // Reverse dissolve
+                            card.cardDissolveStartTime = currentTime;
+                            card.cardDissolveDelay = (card.col * 0.1 + card.row * 0.2); // Same stagger as page load
                         }
                     });
                 } else {
@@ -391,6 +396,8 @@ class Portfolio {
                     this.cards.forEach(card => {
                         if (card !== this.expandedCard) {
                             card.targetCardDissolveProgress = 0.0; // Dissolve
+                            card.cardDissolveStartTime = this.animationTime;
+                            card.cardDissolveDelay = 0; // No stagger for dissolving out
                         }
                     });
                 }
@@ -399,9 +406,12 @@ class Portfolio {
                 // Clicking outside - close expanded card and reverse dissolve
                 this.lastExpandedCard = this.expandedCard;
                 this.expandedCard = null;
+                const currentTime = this.animationTime;
                 this.cards.forEach(card => {
                     if (card !== this.lastExpandedCard) {
                         card.targetCardDissolveProgress = 1.0; // Reverse dissolve
+                        card.cardDissolveStartTime = currentTime;
+                        card.cardDissolveDelay = (card.col * 0.1 + card.row * 0.2); // Same stagger as page load
                     }
                 });
                 this.updateCardPositions();
@@ -522,8 +532,22 @@ class Portfolio {
                 card.dissolveProgress = 0;
             }
             
-            // Update card click dissolve progress
-            card.cardDissolveProgress += (card.targetCardDissolveProgress - card.cardDissolveProgress) * 0.15; // 50% faster
+            // Update card click dissolve progress with identical timing to page load
+            if (card.cardDissolveStartTime > 0) {
+                const dissolveStartTime = card.cardDissolveStartTime + card.cardDissolveDelay;
+                const dissolveDuration = card.targetCardDissolveProgress === 1.0 ? 0.67 : 0.536; // 20% faster for dissolve-out
+                
+                if (this.animationTime >= dissolveStartTime) {
+                    const elapsedTime = this.animationTime - dissolveStartTime;
+                    if (card.targetCardDissolveProgress === 1.0) {
+                        // Reappearing (reverse dissolve)
+                        card.cardDissolveProgress = Math.min(1.0, Math.max(0.0, elapsedTime / dissolveDuration));
+                    } else {
+                        // Disappearing
+                        card.cardDissolveProgress = Math.max(0.0, 1.0 - (elapsedTime / dissolveDuration));
+                    }
+                }
+            }
         });
         
         // Clear lastExpandedCard when animation is complete
