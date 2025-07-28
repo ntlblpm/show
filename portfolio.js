@@ -17,12 +17,34 @@ const fragmentShaderSource = `
     precision mediump float;
     
     uniform sampler2D u_texture;
+    uniform sampler2D u_noiseTexture;
     uniform vec4 u_color;
     uniform float u_useTexture;
     uniform float u_hover;
     uniform float u_expand;
+    uniform float u_dissolveProgress;
+    uniform vec2 u_resolution;
     
     varying vec2 v_texCoord;
+    
+    // Simple noise function for dissolve pattern
+    float random(vec2 st) {
+        return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+    }
+    
+    float noise(vec2 st) {
+        vec2 i = floor(st);
+        vec2 f = fract(st);
+        
+        float a = random(i);
+        float b = random(i + vec2(1.0, 0.0));
+        float c = random(i + vec2(0.0, 1.0));
+        float d = random(i + vec2(1.0, 1.0));
+        
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        
+        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
     
     void main() {
         vec4 texColor = texture2D(u_texture, v_texCoord);
@@ -33,6 +55,26 @@ const fragmentShaderSource = `
         // Add hover effect
         float brightness = 1.0 + u_hover * 0.2;
         baseColor.rgb *= brightness;
+        
+        // Reverse dissolve effect (1.0 - progress for reverse)
+        float dissolveAmount = 1.0 - u_dissolveProgress;
+        
+        // Use noise for dissolve pattern
+        float noiseValue = noise(v_texCoord * 10.0);
+        
+        // Edge parameters
+        float edge_width = mix(0.15, 0.05, u_dissolveProgress);
+        
+        // Create dissolve mask
+        float dissolveMask = smoothstep(dissolveAmount - edge_width, dissolveAmount + edge_width, noiseValue);
+        
+        // Edge glow effect
+        float edgeGlow = 1.0 - smoothstep(0.0, edge_width * 2.0, abs(noiseValue - dissolveAmount));
+        vec3 edgeColor = vec3(0.3, 0.5, 1.0) * edgeGlow * 2.0;
+        
+        // Apply dissolve
+        baseColor.rgb += edgeColor * (1.0 - dissolveMask);
+        baseColor.a *= dissolveMask;
         
         gl_FragColor = baseColor;
     }
@@ -127,6 +169,8 @@ class Portfolio {
         this.useTextureLocation = gl.getUniformLocation(this.program, 'u_useTexture');
         this.hoverLocation = gl.getUniformLocation(this.program, 'u_hover');
         this.expandLocation = gl.getUniformLocation(this.program, 'u_expand');
+        this.dissolveProgressLocation = gl.getUniformLocation(this.program, 'u_dissolveProgress');
+        this.resolutionLocation = gl.getUniformLocation(this.program, 'u_resolution');
         
         // Create buffers
         this.positionBuffer = gl.createBuffer();
@@ -202,7 +246,10 @@ class Portfolio {
                 targetHover: 0,
                 expand: 0,
                 targetExpand: 0,
-                textTexture: null
+                textTexture: null,
+                dissolveProgress: 0,
+                dissolveDelay: (col * 0.1 + row * 0.2), // Staggered appearance
+                initialized: false
             });
         });
     }
@@ -377,12 +424,29 @@ class Portfolio {
         
         // Update card animations
         this.cards.forEach(card => {
-            card.x += (card.targetX - card.x) * 0.1;
-            card.y += (card.targetY - card.y) * 0.1;
-            card.width += (card.targetWidth - card.width) * 0.1;
-            card.height += (card.targetHeight - card.height) * 0.1;
+            // Initialize card at target position on first frame
+            if (!card.initialized) {
+                card.x = card.targetX;
+                card.y = card.targetY;
+                card.width = card.targetWidth;
+                card.height = card.targetHeight;
+                card.initialized = true;
+            } else {
+                // Normal animations after initialization
+                card.x += (card.targetX - card.x) * 0.1;
+                card.y += (card.targetY - card.y) * 0.1;
+                card.width += (card.targetWidth - card.width) * 0.1;
+                card.height += (card.targetHeight - card.height) * 0.1;
+            }
+            
             card.hover += (card.targetHover - card.hover) * 0.1;
             card.expand += (card.targetExpand - card.expand) * 0.1;
+            
+            // Update dissolve progress
+            const dissolveStartTime = card.dissolveDelay;
+            const dissolveDuration = 1.0; // 1 second dissolve
+            const elapsedTime = this.animationTime - dissolveStartTime;
+            card.dissolveProgress = Math.min(1.0, Math.max(0.0, elapsedTime / dissolveDuration));
         });
         
         // Clear lastExpandedCard when animation is complete
@@ -433,7 +497,8 @@ class Portfolio {
                     dimmedColor,
                     card.hover,
                     card.expand,
-                    false
+                    false,
+                    card.dissolveProgress
                 );
                 
                 // Draw text with dimming
@@ -450,7 +515,8 @@ class Portfolio {
                     textColor,
                     card.hover,
                     card.expand,
-                    true
+                    true,
+                    card.dissolveProgress
                 );
             }
         });
@@ -464,7 +530,8 @@ class Portfolio {
                 topCard.project.color,
                 topCard.hover,
                 topCard.expand,
-                false
+                false,
+                topCard.dissolveProgress
             );
             
             // Draw text
@@ -475,12 +542,13 @@ class Portfolio {
                 [1, 1, 1, 1],
                 topCard.hover,
                 topCard.expand,
-                true
+                true,
+                topCard.dissolveProgress
             );
         }
     }
     
-    drawRect(x, y, width, height, color, hover, expand, useTexture) {
+    drawRect(x, y, width, height, color, hover, expand, useTexture, dissolveProgress) {
         const gl = this.gl;
         const canvas = this.canvas;
         
@@ -526,6 +594,8 @@ class Portfolio {
         gl.uniform1f(this.useTextureLocation, useTexture ? 1.0 : 0.0);
         gl.uniform1f(this.hoverLocation, hover);
         gl.uniform1f(this.expandLocation, expand);
+        gl.uniform1f(this.dissolveProgressLocation, dissolveProgress || 1.0);
+        gl.uniform2f(this.resolutionLocation, canvas.width, canvas.height);
         
         // Draw
         gl.drawArrays(gl.TRIANGLES, 0, 6);
