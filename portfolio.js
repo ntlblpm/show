@@ -82,8 +82,8 @@ const fragmentShaderSource = `
         
         // For background rectangles
         if (u_useTexture < 0.5) {
-            // Black background with 0.1 opacity inside the card
-            vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.1);
+            // Black background with 0.5 opacity inside the card
+            vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.7);
             // Border color - transitions from white to cyan-blue on hover
             vec3 normalBorderColor = vec3(1.0, 1.0, 1.0);
             vec3 hoverBorderColor = vec3(0.0, 0.8, 1.0); // Cyan-blue
@@ -130,7 +130,7 @@ const fragmentShaderSource = `
 class Portfolio {
     constructor() {
         this.canvas = document.getElementById('canvas');
-        this.gl = this.canvas.getContext('webgl');
+        this.gl = this.canvas.getContext('webgl', { alpha: true });
         
         if (!this.gl) {
             alert('WebGL not supported');
@@ -605,7 +605,7 @@ class Portfolio {
         const gl = this.gl;
         const canvas = this.canvas;
         
-        gl.clearColor(0.05, 0.05, 0.1, 1.0);
+        gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         
         gl.useProgram(this.program);
@@ -748,7 +748,210 @@ class Portfolio {
     }
 }
 
+// Shader background class
+class ShaderBackground {
+    constructor() {
+        this.canvas = document.getElementById('backgroundCanvas');
+        this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+        
+        if (!this.gl) {
+            console.error('WebGL not supported for background');
+            return;
+        }
+        
+        this.startTime = Date.now();
+        this.init();
+    }
+    
+    init() {
+        const gl = this.gl;
+        
+        // Create shaders
+        const vertexShader = this.createShader(gl.VERTEX_SHADER, this.getVertexShader());
+        const fragmentShader = this.createShader(gl.FRAGMENT_SHADER, this.getFragmentShader());
+        
+        // Create program
+        this.program = gl.createProgram();
+        gl.attachShader(this.program, vertexShader);
+        gl.attachShader(this.program, fragmentShader);
+        gl.linkProgram(this.program);
+        
+        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+            console.error('Unable to initialize shader program:', gl.getProgramInfoLog(this.program));
+            return;
+        }
+        
+        // Get uniform locations
+        this.iTimeLocation = gl.getUniformLocation(this.program, 'iTime');
+        this.iResolutionLocation = gl.getUniformLocation(this.program, 'iResolution');
+        
+        // Create vertex buffer
+        const vertices = new Float32Array([
+            -1.0, -1.0,
+             1.0, -1.0,
+            -1.0,  1.0,
+             1.0,  1.0,
+        ]);
+        
+        const vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+        
+        const positionLocation = gl.getAttribLocation(this.program, 'position');
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+        
+        // Start rendering
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.render();
+    }
+    
+    createShader(type, source) {
+        const gl = this.gl;
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        
+        return shader;
+    }
+    
+    getVertexShader() {
+        return `
+            attribute vec2 position;
+            void main() {
+                gl_Position = vec4(position, 0.0, 1.0);
+            }
+        `;
+    }
+    
+    getFragmentShader() {
+        return `
+            precision highp float;
+            
+            uniform float iTime;
+            uniform vec2 iResolution;
+            
+            const float line_strength = .005;
+            
+            // texture noise
+            float Hash3d(vec3 uv)
+            {
+                float f = uv.x + uv.y * 37.0 + uv.z * 521.0;
+                return fract(cos(f*3.333)*100003.9);
+            }
+            
+            float mixP(float f0, float f1, float a)
+            {
+                return mix(f0, f1, a*a*(3.0-2.0*a));
+            }
+            
+            const vec2 zeroOne = vec2(0.0, 1.0);
+            
+            float noise(vec3 uv)
+            {
+                vec3 fr = fract(uv.xyz);
+                vec3 fl = floor(uv.xyz);
+                float h000 = Hash3d(fl);
+                float h100 = Hash3d(fl + zeroOne.yxx);
+                float h010 = Hash3d(fl + zeroOne.xyx);
+                float h110 = Hash3d(fl + zeroOne.yyx);
+                float h001 = Hash3d(fl + zeroOne.xxy);
+                float h101 = Hash3d(fl + zeroOne.yxy);
+                float h011 = Hash3d(fl + zeroOne.xyy);
+                float h111 = Hash3d(fl + zeroOne.yyy);
+                return mixP(
+                    mixP(mixP(h000, h100, fr.x), mixP(h010, h110, fr.x), fr.y),
+                    mixP(mixP(h001, h101, fr.x), mixP(h011, h111, fr.x), fr.y)
+                    , fr.z);
+            }
+            
+            float Density(vec3 p)
+            {
+                float final = noise(p*0.57115);
+                float other = noise(p*2.07137);	
+                final -= 0.5;
+                final = 0.1/(abs(final*other*other));
+                return final*line_strength;
+            }
+            
+            void main() {
+                // Set up the camera rays for ray marching
+                vec2 fragCoord = gl_FragCoord.xy;
+                vec2 uv = fragCoord.xy/iResolution.xy * 2.0 - 1.0;
+                
+                // Camera up vector
+                vec3 camUp=vec3(0,1,0);
+                
+                // Camera lookat
+                vec3 camLookat=vec3(0,0.0,0);
+                
+                float mx= iTime * 0.002;
+                float my=sin(iTime * 0.006)*0.2+0.2;
+                vec3 camPos=vec3(cos(my)*cos(mx),sin(my),cos(my)*sin(mx))*(200.2);
+                
+                // Camera setup
+                vec3 camVec=normalize(camLookat - camPos);
+                vec3 sideNorm=normalize(cross(camUp, camVec));
+                vec3 upNorm=cross(camVec, sideNorm);
+                vec3 worldFacing=(camPos + camVec);
+                vec3 worldPix = worldFacing + uv.x * sideNorm * (iResolution.x/iResolution.y) + uv.y * upNorm;
+                vec3 relVec = normalize(worldPix - camPos);
+                
+                float t = -5.0;
+                float inc;
+                float maxDepth = 70.0;
+                float density = 0.;
+                
+                float temp;
+                
+                // ray marching
+                for (int i = 0; i < 15; i++) {
+                    if ((t > maxDepth)) break;
+                    
+                    temp = Density(camPos + relVec * t);
+                    inc = 1.9 + temp*.05;	
+                    density += temp * inc;
+                    
+                    t += inc;
+                }
+                
+                // Color
+                vec3 finalColor = vec3(0.6,0.09,0.01)* density * .075;
+                
+                gl_FragColor = vec4(pow(finalColor,vec3(.5)), 1.);
+            }
+        `;
+    }
+    
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    }
+    
+    render() {
+        const gl = this.gl;
+        const time = (Date.now() - this.startTime) / 1000.0;
+        
+        gl.useProgram(this.program);
+        gl.uniform1f(this.iTimeLocation, time);
+        gl.uniform2f(this.iResolutionLocation, this.canvas.width, this.canvas.height);
+        
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        
+        requestAnimationFrame(() => this.render());
+    }
+}
+
 // Initialize portfolio when page loads
 window.addEventListener('load', () => {
+    new ShaderBackground();
     new Portfolio();
 });

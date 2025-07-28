@@ -24,11 +24,22 @@
             background: #000;
         }
         
+        #backgroundCanvas {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        
         #canvas {
+            position: relative;
             width: 100vw;
             height: 100vh;
             display: block;
             cursor: pointer;
+            z-index: 1;
         }
         
         .loading {
@@ -44,6 +55,7 @@
 </head>
 <body>
     <div class="loading" id="loading">Loading portfolio...</div>
+    <canvas id="backgroundCanvas"></canvas>
     <canvas id="canvas"></canvas>
     
     <script src="portfolio.js"></script>
