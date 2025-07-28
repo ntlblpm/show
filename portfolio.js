@@ -382,7 +382,10 @@ class Portfolio {
                 if (x >= card.x && x <= card.x + card.width &&
                     y >= card.y && y <= card.y + card.height) {
                     this.hoveredCard = card;
-                    card.targetHover = 1;
+                    // Don't apply hover to expanded cards
+                    if (card !== this.expandedCard) {
+                        card.targetHover = 1;
+                    }
                 } else {
                     card.targetHover = 0;
                 }
@@ -399,21 +402,14 @@ class Portfolio {
             
             if (this.hoveredCard) {
                 if (this.expandedCard === this.hoveredCard) {
-                    // Closing the expanded card - reverse dissolve others
-                    this.lastExpandedCard = this.expandedCard;
-                    this.expandedCard = null;
-                    const currentTime = this.animationTime;
-                    this.cards.forEach(card => {
-                        if (card !== this.lastExpandedCard) {
-                            card.targetCardDissolveProgress = 1.0; // Reverse dissolve
-                            card.cardDissolveStartTime = currentTime;
-                            card.cardDissolveDelay = (card.col * 0.1 + card.row * 0.2); // Same stagger as page load
-                        }
-                    });
+                    // Clicking on the expanded card - do nothing (don't close it)
+                    return;
                 } else {
                     // Opening a new card - dissolve others
                     this.expandedCard = this.hoveredCard;
                     this.lastExpandedCard = this.hoveredCard;
+                    // Remove hover state from the clicked card
+                    this.expandedCard.targetHover = 0;
                     this.cards.forEach(card => {
                         if (card !== this.expandedCard) {
                             card.targetCardDissolveProgress = 0.0; // Dissolve
