@@ -34,10 +34,6 @@ const fragmentShaderSource = `
         float brightness = 1.0 + u_hover * 0.2;
         baseColor.rgb *= brightness;
         
-        // Add expand effect
-        float fadeIn = 1.0 - u_expand * 0.3;
-        baseColor.rgb *= fadeIn;
-        
         gl_FragColor = baseColor;
     }
 `;
@@ -100,6 +96,7 @@ class Portfolio {
         this.cards = [];
         this.hoveredCard = null;
         this.expandedCard = null;
+        this.lastExpandedCard = null;
         this.animationTime = 0;
         
         this.init();
@@ -283,12 +280,15 @@ class Portfolio {
         this.canvas.addEventListener('click', (e) => {
             if (this.hoveredCard) {
                 if (this.expandedCard === this.hoveredCard) {
+                    this.lastExpandedCard = this.expandedCard;
                     this.expandedCard = null;
                 } else {
                     this.expandedCard = this.hoveredCard;
+                    this.lastExpandedCard = this.hoveredCard;
                 }
                 this.updateCardPositions();
             } else if (this.expandedCard) {
+                this.lastExpandedCard = this.expandedCard;
                 this.expandedCard = null;
                 this.updateCardPositions();
             }
@@ -307,19 +307,35 @@ class Portfolio {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         // Draw text
-        ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        const isExpanded = card.expand > 0.5;
+        const expandProgress = card.expand;
+        const titleTransition = Math.min(expandProgress * 2, 1); // Title transitions first
+        const descriptionOpacity = Math.max(0, (expandProgress - 0.3) / 0.7); // Description fades in later
         
-        if (isExpanded) {
-            // Expanded view
-            ctx.font = `bold ${48}px -apple-system, sans-serif`;
-            ctx.fillText(card.project.title, canvas.width / 2, canvas.height * 0.2);
-            
+        // Title - smoothly transition size and position
+        const titleSize = 32 + (48 - 32) * expandProgress;
+        const titleY = canvas.height * (0.5 - 0.3 * expandProgress);
+        
+        ctx.font = `bold ${titleSize}px -apple-system, sans-serif`;
+        ctx.fillStyle = 'white';
+        ctx.fillText(card.project.title, canvas.width / 2, titleY);
+        
+        // Tech stack - fade out during expansion, move position
+        const techOpacity = Math.max(0, 1 - expandProgress * 2);
+        const techY = canvas.height * (0.7 - 0.1 * expandProgress);
+        
+        if (techOpacity > 0) {
+            ctx.font = `${18}px -apple-system, sans-serif`;
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * techOpacity})`;
+            ctx.fillText(card.project.tech, canvas.width / 2, techY);
+        }
+        
+        // Description - fade in during expansion
+        if (descriptionOpacity > 0) {
             ctx.font = `${24}px -apple-system, sans-serif`;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
             
             // Wrap description
             const words = card.project.description.split(' ');
@@ -341,16 +357,9 @@ class Portfolio {
             });
             ctx.fillText(line, canvas.width / 2, y);
             
+            // Tech stack in expanded view
             ctx.font = `${20}px -apple-system, sans-serif`;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.fillText(card.project.tech, canvas.width / 2, canvas.height * 0.7);
-        } else {
-            // Card view
-            ctx.font = `bold ${Math.min(card.width / 10, 32)}px -apple-system, sans-serif`;
-            ctx.fillText(card.project.title, canvas.width / 2, canvas.height / 2);
-            
-            ctx.font = `${Math.min(card.width / 15, 18)}px -apple-system, sans-serif`;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * descriptionOpacity})`;
             ctx.fillText(card.project.tech, canvas.width / 2, canvas.height * 0.7);
         }
         
@@ -376,6 +385,11 @@ class Portfolio {
             card.expand += (card.targetExpand - card.expand) * 0.1;
         });
         
+        // Clear lastExpandedCard when animation is complete
+        if (this.lastExpandedCard && this.lastExpandedCard.expand < 0.01) {
+            this.lastExpandedCard = null;
+        }
+        
         this.render();
         requestAnimationFrame(() => this.animate());
     }
@@ -400,29 +414,70 @@ class Portfolio {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
         gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0);
         
-        // Draw cards
+        // Determine which card should be on top
+        const topCard = this.expandedCard || this.lastExpandedCard;
+        const dimmingFactor = topCard ? topCard.expand * 0.6 : 0;
+        
+        // Draw all cards except the top card
         this.cards.forEach(card => {
+            if (card !== topCard) {
+                // Apply dimming to background color
+                const dimmedColor = card.project.color.map((c, i) => 
+                    i < 3 ? c * (1 - dimmingFactor) : c
+                );
+                
+                // Draw card background
+                this.drawRect(
+                    card.x, card.y,
+                    card.width, card.height,
+                    dimmedColor,
+                    card.hover,
+                    card.expand,
+                    false
+                );
+                
+                // Draw text with dimming
+                this.createTextTexture(card);
+                const textColor = [
+                    1 - dimmingFactor,
+                    1 - dimmingFactor,
+                    1 - dimmingFactor,
+                    1
+                ];
+                this.drawRect(
+                    card.x, card.y,
+                    card.width, card.height,
+                    textColor,
+                    card.hover,
+                    card.expand,
+                    true
+                );
+            }
+        });
+        
+        // Draw the top card last
+        if (topCard) {
             // Draw card background
             this.drawRect(
-                card.x, card.y,
-                card.width, card.height,
-                card.project.color,
-                card.hover,
-                card.expand,
+                topCard.x, topCard.y,
+                topCard.width, topCard.height,
+                topCard.project.color,
+                topCard.hover,
+                topCard.expand,
                 false
             );
             
             // Draw text
-            this.createTextTexture(card);
+            this.createTextTexture(topCard);
             this.drawRect(
-                card.x, card.y,
-                card.width, card.height,
+                topCard.x, topCard.y,
+                topCard.width, topCard.height,
                 [1, 1, 1, 1],
-                card.hover,
-                card.expand,
+                topCard.hover,
+                topCard.expand,
                 true
             );
-        });
+        }
     }
     
     drawRect(x, y, width, height, color, hover, expand, useTexture) {
