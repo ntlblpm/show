@@ -80,9 +80,16 @@ const fragmentShaderSource = `
         float innerAlpha = 1.0 - smoothstep(0.0, smoothing, innerDistance);
         float borderAlpha = outerAlpha - innerAlpha;
         
-        // For background rectangles, use border only
+        // For background rectangles
         if (u_useTexture < 0.5) {
-            baseColor.a *= borderAlpha;
+            // Black background with 0.1 opacity inside the card
+            vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.1);
+            // White border
+            vec4 whiteBorder = vec4(1.0, 1.0, 1.0, 1.0);
+            
+            // Mix between background and border
+            baseColor = mix(blackBackground, whiteBorder, borderAlpha);
+            baseColor.a *= outerAlpha;
         } else {
             // For text, keep it solid within the card bounds
             baseColor.a *= outerAlpha;
@@ -561,11 +568,11 @@ class Portfolio {
                     i < 3 ? c * (1 - dimmingFactor) : c
                 );
                 
-                // Draw card background
+                // Draw card background (color doesn't matter for background as shader will use black/white)
                 this.drawRect(
                     card.x, card.y,
                     card.width, card.height,
-                    dimmedColor,
+                    [0, 0, 0, 1],
                     card.hover,
                     card.expand,
                     false,
@@ -594,11 +601,11 @@ class Portfolio {
         
         // Draw the top card last
         if (topCard && topCard.pageOpenStarted) {
-            // Draw card background
+            // Draw card background (color doesn't matter for background as shader will use black/white)
             this.drawRect(
                 topCard.x, topCard.y,
                 topCard.width, topCard.height,
-                topCard.project.color,
+                [0, 0, 0, 1],
                 topCard.hover,
                 topCard.expand,
                 false,
