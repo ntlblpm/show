@@ -187,6 +187,7 @@ class Portfolio {
         this.expandedCard = null;
         this.lastExpandedCard = null;
         this.animationTime = 0;
+        this.isAnimating = false;
         
         this.init();
     }
@@ -360,6 +361,18 @@ class Portfolio {
         window.addEventListener('resize', () => this.resize());
         
         this.canvas.addEventListener('mousemove', (e) => {
+            // Disable hover when animating
+            if (this.isAnimating) {
+                this.hoveredCard = null;
+                this.cards.forEach(card => {
+                    if (card !== this.expandedCard) {
+                        card.targetHover = 0;
+                    }
+                });
+                this.canvas.style.cursor = 'default';
+                return;
+            }
+            
             const rect = this.canvas.getBoundingClientRect();
             const x = (e.clientX - rect.left) * window.devicePixelRatio;
             const y = (e.clientY - rect.top) * window.devicePixelRatio;
@@ -379,6 +392,11 @@ class Portfolio {
         });
         
         this.canvas.addEventListener('click', (e) => {
+            // Disable clicks when animating
+            if (this.isAnimating) {
+                return;
+            }
+            
             if (this.hoveredCard) {
                 if (this.expandedCard === this.hoveredCard) {
                     // Closing the expanded card - reverse dissolve others
@@ -502,6 +520,9 @@ class Portfolio {
     animate() {
         this.animationTime += 0.016;
         
+        // Check if any card is animating
+        let anyCardAnimating = false;
+        
         // Update card animations
         this.cards.forEach(card => {
             // Initialize card at target position on first frame
@@ -551,7 +572,29 @@ class Portfolio {
                     }
                 }
             }
+            
+            // Check if this card is still animating
+            const positionThreshold = 1;
+            const expandThreshold = 0.01;
+            const dissolveThreshold = 0.01;
+            
+            const isMoving = Math.abs(card.x - card.targetX) > positionThreshold ||
+                           Math.abs(card.y - card.targetY) > positionThreshold ||
+                           Math.abs(card.width - card.targetWidth) > positionThreshold ||
+                           Math.abs(card.height - card.targetHeight) > positionThreshold;
+            
+            const isExpandAnimating = Math.abs(card.expand - card.targetExpand) > expandThreshold;
+            
+            const isDissolving = card.cardDissolveStartTime > 0 && 
+                               Math.abs(card.cardDissolveProgress - card.targetCardDissolveProgress) > dissolveThreshold;
+            
+            if (isMoving || isExpandAnimating || isDissolving) {
+                anyCardAnimating = true;
+            }
         });
+        
+        // Update global animation state
+        this.isAnimating = anyCardAnimating;
         
         // Clear lastExpandedCard when animation is complete
         if (this.lastExpandedCard && this.lastExpandedCard.expand < 0.01) {
