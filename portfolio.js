@@ -731,7 +731,7 @@ class Portfolio {
             
             // Position tech stack below description with consistent spacing
             const descBottom = descStartY + descLines.length * descLineHeight;
-            const techExpandedStartY = descBottom + 160;
+            const techExpandedStartY = descBottom + 80;
             
             techExpandedLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, techExpandedStartY + index * techExpandedLineHeight);
