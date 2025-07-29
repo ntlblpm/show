@@ -83,7 +83,7 @@ const fragmentShaderSource = `
         // For background rectangles
         if (u_useTexture < 0.5) {
             // Black background with 0.5 opacity inside the card
-            vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.6);
+            vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.5);
             // Border color - transitions from white to cyan-blue on hover
             vec3 normalBorderColor = vec3(1.0, 1.0, 1.0);
             vec3 hoverBorderColor = vec3(0.0, 0.8, 1.0); // Cyan-blue
@@ -150,48 +150,48 @@ class Portfolio {
         this.projects = [
             {
                 title: 'LibreOffice Writer Enhanced',
-                description: 'Fork of LibreOffice with productivity features added to Writer',
-                tech: 'C++, LibreOffice, Writer',
+                description: 'Open-source contribution to LibreOffice core, focusing on direct productivity enhancements to Writer. Part of a large community-driven project supporting multiple platforms including Windows, macOS, Linux, iOS, and Android.',
+                tech: 'C++, LibreOffice Core, Cross-platform',
                 color: [0.2, 0.4, 0.8, 1.0],
                 github: 'https://github.com/ntlblpm/core',
                 video: 'https://vimeo.com/1104959107'
             },
             {
                 title: 'Foto Fun',
-                description: 'Interactive photo manipulation and fun effects application',
-                tech: 'JavaScript, Canvas API, Image Processing',
+                description: 'Free, open-source Photoshop alternative with 32+ professional photo editing tools. Features AI-powered editing with natural language control, including background removal, upscaling, and image generation. Built with an Orchestrator-Worker AI workflow for intuitive editing.',
+                tech: 'Next.js, React, TypeScript, AI APIs',
                 color: [0.8, 0.2, 0.4, 1.0],
                 github: 'https://github.com/gauntletai-p4-pointer/foto-fun',
                 video: 'https://www.youtube.com/watch?v=fCd3eHwUgUg'
             },
             {
                 title: 'Restaurant Delivery Checker',
-                description: 'Tool to check restaurant delivery availability and options',
-                tech: 'Python, Web Scraping, APIs',
+                description: 'AI-powered desktop app for analyzing restaurant delivery options with nutrition and review scoring. Combines real-time data from UberEats and Yelp with sentiment analysis to provide comprehensive restaurant evaluation beyond traditional review platforms.',
+                tech: 'React, Rust (Tauri), AI Integration',
                 color: [0.2, 0.8, 0.4, 1.0],
                 github: 'https://github.com/akgauntlet/restaurant-delivery-checker',
                 video: 'https://www.loom.com/share/9ff5d910e04f45d99b3fca7316ed07a0'
             },
             {
                 title: 'SnapConnect',
-                description: 'Social connection platform for sharing moments',
-                tech: 'React, Node.js, MongoDB',
+                description: 'Gaming-focused social platform with ephemeral messaging and rich profile customization. Features AI-powered conversation starters, achievement system with multiple rarity levels, and real-time disappearing messages. Supports cyberpunk/gaming aesthetics with multiple theme options.',
+                tech: 'React Native, Firebase, AI-powered',
                 color: [0.8, 0.4, 0.2, 1.0],
                 github: 'https://github.com/akgauntlet/snapconnect',
                 video: 'https://www.loom.com/share/74880222132a455ba52362fbbfe60769'
             },
             {
                 title: 'WordWise.ai',
-                description: 'AI-powered writing assistant and text analysis tool',
-                tech: 'Python, NLP, Machine Learning',
+                description: 'AI-powered writing assistant and text analysis tool built with modern web technologies. Leverages Firebase for backend services and features a clean, responsive interface designed with TypeScript and React for robust, type-safe development.',
+                tech: 'React, TypeScript, Firebase',
                 color: [0.4, 0.2, 0.8, 1.0],
                 github: 'https://github.com/akgauntlet/wordwise.ai',
                 video: 'https://app.slack.com/client/T086X0S5P1V/D091TM28QF3'
             },
             {
                 title: 'Roguelite Tactics',
-                description: 'Turn-based tactical roguelite game with procedural generation',
-                tech: 'Unity, C#, Game AI',
+                description: 'Turn-based tactical roguelite game built with Godot 4.4, featuring procedural generation and strategic combat. Organized project architecture with dedicated systems for UI, enemies, players, and shader effects. Currently in active development with 57 commits.',
+                tech: 'Godot 4.4, GDScript, Procedural Generation',
                 color: [0.8, 0.8, 0.2, 1.0],
                 github: 'https://github.com/ntlblpm/roguelite-tactics',
                 video: 'https://vimeo.com/1105307847?share=copy#t=0'
