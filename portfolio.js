@@ -509,22 +509,57 @@ class Portfolio {
         const titleTransition = Math.min(expandProgress * 2, 1); // Title transitions first
         const descriptionOpacity = Math.max(0, (expandProgress - 0.3) / 0.7); // Description fades in later
         
-        // Title - smoothly transition size and position
-        const titleSize = 32 + (48 - 32) * expandProgress;
-        const titleY = canvas.height * (0.5 - 0.3 * expandProgress);
+        // Helper function to wrap text
+        const wrapText = (text, maxWidth) => {
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = '';
+            
+            words.forEach(word => {
+                const testLine = currentLine + word + ' ';
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && currentLine !== '') {
+                    lines.push(currentLine.trim());
+                    currentLine = word + ' ';
+                } else {
+                    currentLine = testLine;
+                }
+            });
+            if (currentLine.trim()) {
+                lines.push(currentLine.trim());
+            }
+            return lines;
+        };
         
+        // Title - smoothly transition size and position with word wrapping
+        const titleSize = 32 + (48 - 32) * expandProgress;
         ctx.font = `${titleSize}px 'ProFontWindows', monospace`;
         ctx.fillStyle = 'white';
-        ctx.fillText(card.project.title, canvas.width / 2, titleY);
+        
+        const titleMaxWidth = canvas.width * 0.9;
+        const titleLines = wrapText(card.project.title, titleMaxWidth);
+        const titleLineHeight = titleSize * 1.2;
+        const titleStartY = canvas.height * (0.5 - 0.3 * expandProgress) - (titleLines.length - 1) * titleLineHeight / 2;
+        
+        titleLines.forEach((line, index) => {
+            ctx.fillText(line, canvas.width / 2, titleStartY + index * titleLineHeight);
+        });
         
         // Tech stack - fade out during expansion, move position
         const techOpacity = Math.max(0, 1 - expandProgress * 2);
-        const techY = canvas.height * (0.7 - 0.1 * expandProgress);
         
         if (techOpacity > 0) {
             ctx.font = `${18}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * techOpacity})`;
-            ctx.fillText(card.project.tech, canvas.width / 2, techY);
+            
+            const techMaxWidth = canvas.width * 0.9;
+            const techLines = wrapText(card.project.tech, techMaxWidth);
+            const techLineHeight = 22;
+            const techStartY = canvas.height * (0.7 - 0.1 * expandProgress) - (techLines.length - 1) * techLineHeight / 2;
+            
+            techLines.forEach((line, index) => {
+                ctx.fillText(line, canvas.width / 2, techStartY + index * techLineHeight);
+            });
         }
         
         // Description - fade in during expansion
@@ -533,29 +568,27 @@ class Portfolio {
             ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
             
             // Wrap description
-            const words = card.project.description.split(' ');
-            let line = '';
-            let y = canvas.height * 0.35;
-            const lineHeight = 30;
-            const maxWidth = canvas.width * 0.8;
+            const descMaxWidth = canvas.width * 0.8;
+            const descLines = wrapText(card.project.description, descMaxWidth);
+            const descLineHeight = 30;
+            const descStartY = canvas.height * 0.35;
             
-            words.forEach(word => {
-                const testLine = line + word + ' ';
-                const metrics = ctx.measureText(testLine);
-                if (metrics.width > maxWidth && line !== '') {
-                    ctx.fillText(line, canvas.width / 2, y);
-                    line = word + ' ';
-                    y += lineHeight;
-                } else {
-                    line = testLine;
-                }
+            descLines.forEach((line, index) => {
+                ctx.fillText(line, canvas.width / 2, descStartY + index * descLineHeight);
             });
-            ctx.fillText(line, canvas.width / 2, y);
             
             // Tech stack in expanded view
             ctx.font = `${20}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * descriptionOpacity})`;
-            ctx.fillText(card.project.tech, canvas.width / 2, canvas.height * 0.7);
+            
+            const techExpandedMaxWidth = canvas.width * 0.8;
+            const techExpandedLines = wrapText(card.project.tech, techExpandedMaxWidth);
+            const techExpandedLineHeight = 25;
+            const techExpandedStartY = canvas.height * 0.7 - (techExpandedLines.length - 1) * techExpandedLineHeight / 2;
+            
+            techExpandedLines.forEach((line, index) => {
+                ctx.fillText(line, canvas.width / 2, techExpandedStartY + index * techExpandedLineHeight);
+            });
         }
         
         // Update texture
