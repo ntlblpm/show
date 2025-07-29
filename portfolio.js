@@ -532,14 +532,18 @@ class Portfolio {
         };
         
         // Title - smoothly transition size and position with word wrapping
-        const titleSize = 32 + (48 - 32) * expandProgress;
+        const titleSize = 28 + (42 - 28) * expandProgress;
         ctx.font = `${titleSize}px 'ProFontWindows', monospace`;
         ctx.fillStyle = 'white';
         
-        const titleMaxWidth = canvas.width * 0.9;
+        const titleMaxWidth = canvas.width * 0.85;
         const titleLines = wrapText(card.project.title, titleMaxWidth);
-        const titleLineHeight = titleSize * 1.2;
-        const titleStartY = canvas.height * (0.5 - 0.3 * expandProgress) - (titleLines.length - 1) * titleLineHeight / 2;
+        const titleLineHeight = titleSize * 1.3;
+        
+        // For collapsed state, center vertically at 40% height
+        // For expanded state, move to 20% height
+        const titleCenterY = canvas.height * (0.4 - 0.2 * expandProgress);
+        const titleStartY = titleCenterY - (titleLines.length - 1) * titleLineHeight / 2;
         
         titleLines.forEach((line, index) => {
             ctx.fillText(line, canvas.width / 2, titleStartY + index * titleLineHeight);
@@ -549,13 +553,16 @@ class Portfolio {
         const techOpacity = Math.max(0, 1 - expandProgress * 2);
         
         if (techOpacity > 0) {
-            ctx.font = `${18}px 'ProFontWindows', monospace`;
+            ctx.font = `${16}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * techOpacity})`;
             
-            const techMaxWidth = canvas.width * 0.9;
+            const techMaxWidth = canvas.width * 0.85;
             const techLines = wrapText(card.project.tech, techMaxWidth);
-            const techLineHeight = 22;
-            const techStartY = canvas.height * (0.7 - 0.1 * expandProgress) - (techLines.length - 1) * techLineHeight / 2;
+            const techLineHeight = 20;
+            
+            // Position tech stack consistently below title
+            const titleBottom = titleStartY + titleLines.length * titleLineHeight;
+            const techStartY = titleBottom + 30; // Fixed spacing from title
             
             techLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, techStartY + index * techLineHeight);
@@ -564,27 +571,33 @@ class Portfolio {
         
         // Description - fade in during expansion
         if (descriptionOpacity > 0) {
-            ctx.font = `${24}px 'ProFontWindows', monospace`;
+            ctx.font = `${22}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
             
             // Wrap description
-            const descMaxWidth = canvas.width * 0.8;
+            const descMaxWidth = canvas.width * 0.75;
             const descLines = wrapText(card.project.description, descMaxWidth);
-            const descLineHeight = 30;
-            const descStartY = canvas.height * 0.35;
+            const descLineHeight = 28;
+            
+            // Position description with consistent spacing below title
+            const expandedTitleBottom = (canvas.height * 0.2) + (titleLines.length * (42 * 1.3));
+            const descStartY = expandedTitleBottom + 40;
             
             descLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, descStartY + index * descLineHeight);
             });
             
             // Tech stack in expanded view
-            ctx.font = `${20}px 'ProFontWindows', monospace`;
+            ctx.font = `${18}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * descriptionOpacity})`;
             
-            const techExpandedMaxWidth = canvas.width * 0.8;
+            const techExpandedMaxWidth = canvas.width * 0.75;
             const techExpandedLines = wrapText(card.project.tech, techExpandedMaxWidth);
-            const techExpandedLineHeight = 25;
-            const techExpandedStartY = canvas.height * 0.7 - (techExpandedLines.length - 1) * techExpandedLineHeight / 2;
+            const techExpandedLineHeight = 24;
+            
+            // Position tech stack below description with consistent spacing
+            const descBottom = descStartY + descLines.length * descLineHeight;
+            const techExpandedStartY = descBottom + 35;
             
             techExpandedLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, techExpandedStartY + index * techExpandedLineHeight);
