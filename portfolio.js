@@ -83,7 +83,7 @@ const fragmentShaderSource = `
         // For background rectangles
         if (u_useTexture < 0.5) {
             // Black background with 0.5 opacity inside the card
-            vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.7);
+            vec4 blackBackground = vec4(0.0, 0.0, 0.0, 0.6);
             // Border color - transitions from white to cyan-blue on hover
             vec3 normalBorderColor = vec3(1.0, 1.0, 1.0);
             vec3 hoverBorderColor = vec3(0.0, 0.8, 1.0); // Cyan-blue
@@ -838,94 +838,184 @@ class ShaderBackground {
             uniform float iTime;
             uniform vec2 iResolution;
             
-            const float line_strength = .005;
+            #define TIME        iTime
+            #define RESOLUTION  iResolution
+            #define PI          3.141592654
+            #define TAU         (2.0*PI)
             
-            // texture noise
-            float Hash3d(vec3 uv)
-            {
-                float f = uv.x + uv.y * 37.0 + uv.z * 521.0;
-                return fract(cos(f*3.333)*100003.9);
+            const float gravity = 1.0;
+            const float waterTension = 0.01;
+            
+            const vec3 skyCol1 = vec3(0.6, 0.35, 0.3).zyx*0.5;
+            const vec3 skyCol2 = vec3(1.0, 0.3, 0.3).zyx*0.5 ;
+            const vec3 sunCol1 = vec3(1.0,0.5,0.4).zyx;
+            const vec3 sunCol2 = vec3(1.0,0.8,0.8).zyx;
+            const vec3 seaCol1 = vec3(0.1,0.2,0.2)*0.2;
+            const vec3 seaCol2 = vec3(0.2,0.9,0.6)*0.5;
+            
+            float tanh_approx(float x) {
+                float x2 = x*x;
+                return clamp(x*(27.0 + x2)/(27.0+9.0*x2), -1.0, 1.0);
             }
             
-            float mixP(float f0, float f1, float a)
-            {
-                return mix(f0, f1, a*a*(3.0-2.0*a));
+            vec2 wave(in float t, in float a, in float w, in float p) {
+                float x = t;
+                float y = a*sin(t*w + p);
+                return vec2(x, y);
             }
             
-            const vec2 zeroOne = vec2(0.0, 1.0);
-            
-            float noise(vec3 uv)
-            {
-                vec3 fr = fract(uv.xyz);
-                vec3 fl = floor(uv.xyz);
-                float h000 = Hash3d(fl);
-                float h100 = Hash3d(fl + zeroOne.yxx);
-                float h010 = Hash3d(fl + zeroOne.xyx);
-                float h110 = Hash3d(fl + zeroOne.yyx);
-                float h001 = Hash3d(fl + zeroOne.xxy);
-                float h101 = Hash3d(fl + zeroOne.yxy);
-                float h011 = Hash3d(fl + zeroOne.xyy);
-                float h111 = Hash3d(fl + zeroOne.yyy);
-                return mixP(
-                    mixP(mixP(h000, h100, fr.x), mixP(h010, h110, fr.x), fr.y),
-                    mixP(mixP(h001, h101, fr.x), mixP(h011, h111, fr.x), fr.y)
-                    , fr.z);
+            vec2 dwave(in float t, in float a, in float w, in float p) {
+                float dx = 1.0;
+                float dy = a*w*cos(t*w + p);
+                return vec2(dx, dy);
             }
             
-            float Density(vec3 p)
-            {
-                float final = noise(p*0.57115);
-                float other = noise(p*2.07137);	
-                final -= 0.5;
-                final = 0.1/(abs(final*other*other));
-                return final*line_strength;
+            vec2 gravityWave(in float t, in float a, in float k, in float h) {
+                float w = sqrt(gravity*k*tanh_approx(k*h));
+                return wave(t, a ,k, w*TIME);
+            }
+            
+            vec2 capillaryWave(in float t, in float a, in float k, in float h) {
+                float w = sqrt((gravity*k + waterTension*k*k*k)*tanh_approx(k*h));
+                return wave(t, a, k, w*TIME);
+            }
+            
+            vec2 gravityWaveD(in float t, in float a, in float k, in float h) {
+                float w = sqrt(gravity*k*tanh_approx(k*h));
+                return dwave(t, a, k, w*TIME);
+            }
+            
+            vec2 capillaryWaveD(in float t, in float a, in float k, in float h) {
+                float w = sqrt((gravity*k + waterTension*k*k*k)*tanh_approx(k*h));
+                return dwave(t, a, k, w*TIME);
+            }
+            
+            void mrot(inout vec2 p, in float a) {
+                float c = cos(a);
+                float s = sin(a);
+                p = vec2(c*p.x + s*p.y, -s*p.x + c*p.y);
+            }
+            
+            vec4 sea(in vec2 p, in float ia) {
+                float y = 0.0;
+                vec3 d = vec3(0.0);
+            
+                const int maxIter = 8;
+                const int midIter = 4;
+            
+                float kk = 1.0/1.3;
+                float aa = 1.0/(kk*kk);
+                float k = 1.0*pow(kk, -float(maxIter) + 1.0);
+                float a = ia*0.25*pow(aa, -float(maxIter) + 1.0);
+            
+                float h = 25.0;
+                p *= 0.5;
+                
+                vec2 waveDir = vec2(0.0, 1.0);
+            
+                for (int i = midIter; i < maxIter; ++i) {
+                    float t = dot(-waveDir, p) + float(i);
+                    y += capillaryWave(t, a, k, h).y;
+                    vec2 dw = capillaryWaveD(-t, a, k, h);
+                    
+                    d += vec3(waveDir.x, dw.y, waveDir.y);
+            
+                    mrot(waveDir, PI/3.0);
+            
+                    k *= kk;
+                    a *= aa;
+                }
+                
+                waveDir = vec2(0.0, 1.0);
+            
+                for (int i = 0; i < midIter; ++i) {
+                    float t = dot(waveDir, p) + float(i);
+                    y += gravityWave(t, a, k, h).y;
+                    vec2 dw = gravityWaveD(t, a, k, h);
+                    
+                    vec2 d2 = vec2(0.0, dw.x);
+                    
+                    d += vec3(waveDir.x, dw.y, waveDir.y);
+            
+                    mrot(waveDir, -step(2.0, float(i)));
+            
+                    k *= kk;
+                    a *= aa;
+                }
+            
+                vec3 t = normalize(d);
+                vec3 nxz = normalize(vec3(t.z, 0.0, -t.x));
+                vec3 nor = cross(t, nxz);
+            
+                return vec4(y, nor);
+            }
+            
+            vec3 sunDirection() {
+                vec3 dir = normalize(vec3(0, 0.06, 1));
+                return dir;
+            }
+            
+            vec3 skyColor(in vec3 rd) {
+                vec3 sunDir = sunDirection();
+                float sunDot = max(dot(rd, sunDir), 0.0);
+                vec3 final = vec3(0.0);
+                final += mix(skyCol1, skyCol2, rd.y);
+                final += 0.5*sunCol1*pow(sunDot, 90.0);
+                final += 4.0*sunCol2*pow(sunDot, 900.0);
+                return final;
+            }
+            
+            vec3 render(in vec3 ro, in vec3 rd) {
+                vec3 col = vec3(0.0);
+            
+                float dsea = (0.0 - ro.y)/rd.y;
+                
+                vec3 sunDir = sunDirection();
+                
+                vec3 sky = skyColor(rd);
+                
+                if (dsea > 0.0) {
+                    vec3 p = ro + dsea*rd;
+                    vec4 s = sea(p.xz, 1.0);
+                    float h = s.x;    
+                    vec3 nor = s.yzw;
+                    nor = mix(nor, vec3(0.0, 1.0, 0.0), smoothstep(0.0, 200.0, dsea));
+            
+                    float fre = clamp(1.0 - dot(-nor,rd), 0.0, 1.0);
+                    fre = fre*fre*fre;
+                    float dif = mix(0.25, 1.0, max(dot(nor,sunDir), 0.0));
+                    
+                    vec3 refl = skyColor(reflect(rd, nor));
+                    vec3 refr = seaCol1 + dif*sunCol1*seaCol2*0.1; 
+                    
+                    col = mix(refr, 0.9*refl, fre);
+                    
+                    float atten = max(1.0 - dot(dsea,dsea) * 0.001, 0.0);
+                    col += seaCol2*(p.y - h) * 2.0 * atten;
+                    
+                    col = mix(col, sky, 1.0 - exp(-0.01*dsea));
+                    
+                } else {
+                    col = sky;
+                }
+                
+                return col;
             }
             
             void main() {
-                // Set up the camera rays for ray marching
-                vec2 fragCoord = gl_FragCoord.xy;
-                vec2 uv = fragCoord.xy/iResolution.xy * 2.0 - 1.0;
-                
-                // Camera up vector
-                vec3 camUp=vec3(0,1,0);
-                
-                // Camera lookat
-                vec3 camLookat=vec3(0,0.0,0);
-                
-                float mx= iTime * 0.002;
-                float my=sin(iTime * 0.006)*0.2+0.2;
-                vec3 camPos=vec3(cos(my)*cos(mx),sin(my),cos(my)*sin(mx))*(200.2);
-                
-                // Camera setup
-                vec3 camVec=normalize(camLookat - camPos);
-                vec3 sideNorm=normalize(cross(camUp, camVec));
-                vec3 upNorm=cross(camVec, sideNorm);
-                vec3 worldFacing=(camPos + camVec);
-                vec3 worldPix = worldFacing + uv.x * sideNorm * (iResolution.x/iResolution.y) + uv.y * upNorm;
-                vec3 relVec = normalize(worldPix - camPos);
-                
-                float t = -5.0;
-                float inc;
-                float maxDepth = 70.0;
-                float density = 0.;
-                
-                float temp;
-                
-                // ray marching
-                for (int i = 0; i < 15; i++) {
-                    if ((t > maxDepth)) break;
-                    
-                    temp = Density(camPos + relVec * t);
-                    inc = 1.9 + temp*.05;	
-                    density += temp * inc;
-                    
-                    t += inc;
-                }
-                
-                // Color
-                vec3 finalColor = vec3(0.6,0.09,0.01)* density * .075;
-                
-                gl_FragColor = vec4(pow(finalColor,vec3(.5)), 1.);
+                vec2 q = gl_FragCoord.xy/RESOLUTION.xy;
+                vec2 p = -1.0 + 2.0*q;
+                p.x *= RESOLUTION.x/RESOLUTION.y;
+            
+                vec3 ro = vec3(0.0, 10.0, 0.0);
+                vec3 ww = normalize(vec3(0.0, -0.1, 1.0));
+                vec3 uu = normalize(cross( vec3(0.0,1.0,0.0), ww));
+                vec3 vv = normalize(cross(ww,uu));
+                vec3 rd = normalize(p.x*uu + p.y*vv + 2.5*ww);
+            
+                vec3 col = render(ro, rd);
+            
+                gl_FragColor = vec4(col, 1.0);
             }
         `;
     }
