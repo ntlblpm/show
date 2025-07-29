@@ -540,10 +540,9 @@ class Portfolio {
         const titleLines = wrapText(card.project.title, titleMaxWidth);
         const titleLineHeight = titleSize * 1.3;
         
-        // For collapsed state, center vertically at 40% height
+        // For collapsed state, title starts at fixed position from top
         // For expanded state, move to 20% height
-        const titleCenterY = canvas.height * (0.4 - 0.2 * expandProgress);
-        const titleStartY = titleCenterY - (titleLines.length - 1) * titleLineHeight / 2;
+        const titleStartY = canvas.height * 0.37 + (canvas.height * 0.2 - canvas.height * 0.37) * expandProgress;
         
         titleLines.forEach((line, index) => {
             ctx.fillText(line, canvas.width / 2, titleStartY + index * titleLineHeight);
@@ -560,9 +559,8 @@ class Portfolio {
             const techLines = wrapText(card.project.tech, techMaxWidth);
             const techLineHeight = 20;
             
-            // Position tech stack consistently below title
-            const titleBottom = titleStartY + titleLines.length * titleLineHeight;
-            const techStartY = titleBottom + 30; // Fixed spacing from title
+            // Position tech stack at fixed position for consistency
+            const techStartY = canvas.height * 0.67; // Fixed position for all cards
             
             techLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, techStartY + index * techLineHeight);
@@ -579,9 +577,8 @@ class Portfolio {
             const descLines = wrapText(card.project.description, descMaxWidth);
             const descLineHeight = 28;
             
-            // Position description with consistent spacing below title
-            const expandedTitleBottom = (canvas.height * 0.2) + (titleLines.length * (42 * 1.3));
-            const descStartY = expandedTitleBottom + 40;
+            // Position description at fixed position for consistency
+            const descStartY = canvas.height * 0.35;
             
             descLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, descStartY + index * descLineHeight);
