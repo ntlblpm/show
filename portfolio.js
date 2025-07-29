@@ -144,46 +144,52 @@ class Portfolio {
         
         this.projects = [
             {
-                title: 'Project Alpha',
-                description: 'A revolutionary web application built with modern technologies',
-                tech: 'React, Node.js, WebGL',
+                title: 'LibreOffice Writer Enhanced',
+                description: 'Fork of LibreOffice with productivity features added to Writer',
+                tech: 'C++, LibreOffice, Writer',
                 color: [0.2, 0.4, 0.8, 1.0],
-                link: '#'
+                github: 'https://github.com/ntlblpm/core',
+                video: 'https://vimeo.com/1104959107'
             },
             {
-                title: 'Data Visualizer',
-                description: 'Interactive data visualization platform for complex datasets',
-                tech: 'D3.js, Python, PostgreSQL',
+                title: 'Foto Fun',
+                description: 'Interactive photo manipulation and fun effects application',
+                tech: 'JavaScript, Canvas API, Image Processing',
                 color: [0.8, 0.2, 0.4, 1.0],
-                link: '#'
+                github: 'https://github.com/gauntletai-p4-pointer/foto-fun',
+                video: 'https://www.youtube.com/watch?v=fCd3eHwUgUg'
             },
             {
-                title: 'Mobile Experience',
-                description: 'Native mobile app with seamless cross-platform functionality',
-                tech: 'React Native, Firebase',
+                title: 'Restaurant Delivery Checker',
+                description: 'Tool to check restaurant delivery availability and options',
+                tech: 'Python, Web Scraping, APIs',
                 color: [0.2, 0.8, 0.4, 1.0],
-                link: '#'
+                github: 'https://github.com/akgauntlet/restaurant-delivery-checker',
+                video: 'https://www.loom.com/share/9ff5d910e04f45d99b3fca7316ed07a0'
             },
             {
-                title: 'AI Assistant',
-                description: 'Machine learning powered assistant for productivity',
-                tech: 'TensorFlow, Python, AWS',
+                title: 'SnapConnect',
+                description: 'Social connection platform for sharing moments',
+                tech: 'React, Node.js, MongoDB',
                 color: [0.8, 0.4, 0.2, 1.0],
-                link: '#'
+                github: 'https://github.com/akgauntlet/snapconnect',
+                video: 'https://www.loom.com/share/74880222132a455ba52362fbbfe60769'
             },
             {
-                title: 'E-Commerce Platform',
-                description: 'Scalable online marketplace with real-time features',
-                tech: 'Next.js, Stripe, Redis',
+                title: 'WordWise.ai',
+                description: 'AI-powered writing assistant and text analysis tool',
+                tech: 'Python, NLP, Machine Learning',
                 color: [0.4, 0.2, 0.8, 1.0],
-                link: '#'
+                github: 'https://github.com/akgauntlet/wordwise.ai',
+                video: 'https://app.slack.com/client/T086X0S5P1V/D091TM28QF3'
             },
             {
-                title: 'Game Engine',
-                description: 'Lightweight 2D game engine for browser-based games',
-                tech: 'WebGL, TypeScript, WASM',
+                title: 'Roguelite Tactics',
+                description: 'Turn-based tactical roguelite game with procedural generation',
+                tech: 'Unity, C#, Game AI',
                 color: [0.8, 0.8, 0.2, 1.0],
-                link: '#'
+                github: 'https://github.com/ntlblpm/roguelite-tactics',
+                video: 'https://vimeo.com/1105307847?share=copy#t=0'
             }
         ];
         
@@ -366,8 +372,8 @@ class Portfolio {
         window.addEventListener('resize', () => this.resize());
         
         this.canvas.addEventListener('mousemove', (e) => {
-            // Disable hover when animating
-            if (this.isAnimating) {
+            // Disable hover when animating or when a card is expanded
+            if (this.isAnimating || this.expandedCard) {
                 this.hoveredCard = null;
                 this.cards.forEach(card => {
                     if (card !== this.expandedCard) {
@@ -400,8 +406,23 @@ class Portfolio {
         });
         
         this.canvas.addEventListener('click', (e) => {
-            // Disable clicks when animating
-            if (this.isAnimating) {
+            // Disable clicks when animating or when a card is already expanded
+            if (this.isAnimating || this.expandedCard) {
+                // Allow clicking outside to close
+                if (this.expandedCard && !this.hoveredCard) {
+                    // Clicking outside - close expanded card and reverse dissolve
+                    this.lastExpandedCard = this.expandedCard;
+                    this.expandedCard = null;
+                    const currentTime = this.animationTime;
+                    this.cards.forEach(card => {
+                        if (card !== this.lastExpandedCard) {
+                            card.targetCardDissolveProgress = 1.0; // Reverse dissolve
+                            card.cardDissolveStartTime = currentTime;
+                            card.cardDissolveDelay = (card.col * 0.1 + card.row * 0.2); // Same stagger as page load
+                        }
+                    });
+                    this.updateCardPositions();
+                }
                 return;
             }
             
@@ -423,19 +444,6 @@ class Portfolio {
                         }
                     });
                 }
-                this.updateCardPositions();
-            } else if (this.expandedCard) {
-                // Clicking outside - close expanded card and reverse dissolve
-                this.lastExpandedCard = this.expandedCard;
-                this.expandedCard = null;
-                const currentTime = this.animationTime;
-                this.cards.forEach(card => {
-                    if (card !== this.lastExpandedCard) {
-                        card.targetCardDissolveProgress = 1.0; // Reverse dissolve
-                        card.cardDissolveStartTime = currentTime;
-                        card.cardDissolveDelay = (card.col * 0.1 + card.row * 0.2); // Same stagger as page load
-                    }
-                });
                 this.updateCardPositions();
             }
         });
