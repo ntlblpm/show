@@ -685,24 +685,24 @@ class Portfolio {
             ctx.fillText(line, canvas.width / 2, titleStartY + index * titleLineHeight);
         });
         
-        // Tech stack - fade out during expansion, move position
-        const techOpacity = Math.max(0, 1 - expandProgress * 2);
+        // Tech stack - smooth transition between collapsed and expanded positions
+        const techSize = 18 + (20 - 18) * expandProgress; // Slight size increase
+        ctx.font = `${techSize}px 'ProFontWindows', monospace`;
+        ctx.fillStyle = `rgba(255, 255, 255, 0.8)`;
         
-        if (techOpacity > 0) {
-            ctx.font = `${18}px 'ProFontWindows', monospace`;
-            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * techOpacity})`;
-            
-            const techMaxWidth = canvas.width * 0.85;
-            const techLines = wrapText(card.project.tech, techMaxWidth);
-            const techLineHeight = 20;
-            
-            // Position tech stack at fixed position for consistency
-            const techStartY = canvas.height * 0.67; // Fixed position for all cards
-            
-            techLines.forEach((line, index) => {
-                ctx.fillText(line, canvas.width / 2, techStartY + index * techLineHeight);
-            });
-        }
+        const techMaxWidth = canvas.width * (0.85 - 0.1 * expandProgress); // Adjust width for expanded view
+        const techLines = wrapText(card.project.tech, techMaxWidth);
+        const techLineHeight = 20 + 4 * expandProgress; // Slightly increase line height
+        
+        // Smoothly transition position from collapsed to expanded location
+        const collapsedTechY = canvas.height * 0.67;
+        // Use a fixed expanded position relative to canvas height for stability
+        const expandedTechY = canvas.height * 0.65; // Stable position in expanded view
+        const techStartY = collapsedTechY + (expandedTechY - collapsedTechY) * expandProgress;
+        
+        techLines.forEach((line, index) => {
+            ctx.fillText(line, canvas.width / 2, techStartY + index * techLineHeight);
+        });
         
         // Description - fade in during expansion
         if (descriptionOpacity > 0) {
@@ -719,22 +719,6 @@ class Portfolio {
             
             descLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, descStartY + index * descLineHeight);
-            });
-            
-            // Tech stack in expanded view
-            ctx.font = `${20}px 'ProFontWindows', monospace`;
-            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
-            
-            const techExpandedMaxWidth = canvas.width * 0.75;
-            const techExpandedLines = wrapText(card.project.tech, techExpandedMaxWidth);
-            const techExpandedLineHeight = 24;
-            
-            // Position tech stack below description with consistent spacing
-            const descBottom = descStartY + descLines.length * descLineHeight;
-            const techExpandedStartY = descBottom + 80;
-            
-            techExpandedLines.forEach((line, index) => {
-                ctx.fillText(line, canvas.width / 2, techExpandedStartY + index * techExpandedLineHeight);
             });
         }
         
