@@ -820,15 +820,16 @@ class Portfolio {
             this.lastExpandedCard = null;
         }
         
-        // Update button positions if card is expanded and animating
-        if (this.expandedCard && this.buttonContainer) {
-            const isMoving = Math.abs(this.expandedCard.x - this.expandedCard.targetX) > 0.5 ||
-                           Math.abs(this.expandedCard.y - this.expandedCard.targetY) > 0.5 ||
-                           Math.abs(this.expandedCard.width - this.expandedCard.targetWidth) > 0.5 ||
-                           Math.abs(this.expandedCard.height - this.expandedCard.targetHeight) > 0.5;
+        // Update button positions if card is expanded/collapsing and animating
+        const activeCard = this.expandedCard || this.lastExpandedCard;
+        if (activeCard && this.buttonContainer) {
+            const isMoving = Math.abs(activeCard.x - activeCard.targetX) > 0.5 ||
+                           Math.abs(activeCard.y - activeCard.targetY) > 0.5 ||
+                           Math.abs(activeCard.width - activeCard.targetWidth) > 0.5 ||
+                           Math.abs(activeCard.height - activeCard.targetHeight) > 0.5;
             
-            if (isMoving) {
-                this.positionCardButtons(this.expandedCard);
+            if (isMoving || activeCard.expand > 0.01) {
+                this.positionCardButtons(activeCard);
             }
         }
         
