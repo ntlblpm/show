@@ -408,10 +408,10 @@ class Portfolio {
             font-size: 16px;
             background: transparent;
             color: rgba(255, 255, 255, 0.8);
-            border: 2px solid rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s ease-out;
+            transition: border-color 0.3s ease-out;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -431,11 +431,9 @@ class Portfolio {
         [viewCodeBtn, watchDemoBtn].forEach(btn => {
             btn.addEventListener('mouseenter', () => {
                 btn.style.borderColor = 'rgba(0, 204, 255, 0.8)';
-                btn.style.color = 'rgba(0, 204, 255, 0.9)';
             });
             btn.addEventListener('mouseleave', () => {
                 btn.style.borderColor = 'rgba(255, 255, 255, 0.8)';
-                btn.style.color = 'rgba(255, 255, 255, 0.8)';
             });
         });
         
@@ -678,8 +676,8 @@ class Portfolio {
         const titleLineHeight = titleSize * 1.3;
         
         // For collapsed state, title starts at fixed position from top
-        // For expanded state, move to 20% height
-        const titleStartY = canvas.height * 0.37 + (canvas.height * 0.2 - canvas.height * 0.37) * expandProgress;
+        // For expanded state, move to 30% height (moved down from 20%)
+        const titleStartY = canvas.height * 0.37 + (canvas.height * 0.25 - canvas.height * 0.37) * expandProgress;
         
         titleLines.forEach((line, index) => {
             ctx.fillText(line, canvas.width / 2, titleStartY + index * titleLineHeight);
@@ -689,8 +687,8 @@ class Portfolio {
         const techOpacity = Math.max(0, 1 - expandProgress * 2);
         
         if (techOpacity > 0) {
-            ctx.font = `${16}px 'ProFontWindows', monospace`;
-            ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * techOpacity})`;
+            ctx.font = `${18}px 'ProFontWindows', monospace`;
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * techOpacity})`;
             
             const techMaxWidth = canvas.width * 0.85;
             const techLines = wrapText(card.project.tech, techMaxWidth);
@@ -714,16 +712,16 @@ class Portfolio {
             const descLines = wrapText(card.project.description, descMaxWidth);
             const descLineHeight = 28;
             
-            // Position description at fixed position for consistency
-            const descStartY = canvas.height * 0.35;
+            // Position description at fixed position for consistency (moved down from 35% to 45%)
+            const descStartY = canvas.height * 0.40;
             
             descLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, descStartY + index * descLineHeight);
             });
             
             // Tech stack in expanded view
-            ctx.font = `${18}px 'ProFontWindows', monospace`;
-            ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * descriptionOpacity})`;
+            ctx.font = `${20}px 'ProFontWindows', monospace`;
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
             
             const techExpandedMaxWidth = canvas.width * 0.75;
             const techExpandedLines = wrapText(card.project.tech, techExpandedMaxWidth);
@@ -731,7 +729,7 @@ class Portfolio {
             
             // Position tech stack below description with consistent spacing
             const descBottom = descStartY + descLines.length * descLineHeight;
-            const techExpandedStartY = descBottom + 35;
+            const techExpandedStartY = descBottom + 160;
             
             techExpandedLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, techExpandedStartY + index * techExpandedLineHeight);
