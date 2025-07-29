@@ -149,12 +149,12 @@ class Portfolio {
         
         this.projects = [
             {
-                title: 'LibreOffice Writer Enhanced',
-                description: 'Open-source contribution to LibreOffice core, focusing on direct productivity enhancements to Writer. Part of a large community-driven project supporting multiple platforms including Windows, macOS, Linux, iOS, and Android.',
-                tech: 'C++, LibreOffice Core, Cross-platform',
-                color: [0.2, 0.4, 0.8, 1.0],
-                github: 'https://github.com/ntlblpm/core',
-                video: 'https://vimeo.com/1104959107'
+                title: 'Roguelite Tactics',
+                description: 'Turn-based tactical roguelite game built with Godot 4.4, featuring procedural generation and strategic combat. Organized project architecture with dedicated systems for UI, enemies, players, and shader effects. Currently in active development with 57 commits.',
+                tech: 'Godot 4.4, GDScript, Procedural Generation',
+                color: [0.8, 0.8, 0.2, 1.0],
+                github: 'https://github.com/ntlblpm/roguelite-tactics',
+                video: 'https://vimeo.com/1105307847?share=copy#t=0'
             },
             {
                 title: 'Foto Fun',
@@ -165,22 +165,6 @@ class Portfolio {
                 video: 'https://www.youtube.com/watch?v=fCd3eHwUgUg'
             },
             {
-                title: 'Restaurant Delivery Checker',
-                description: 'AI-powered desktop app for analyzing restaurant delivery options with nutrition and review scoring. Combines real-time data from UberEats and Yelp with sentiment analysis to provide comprehensive restaurant evaluation beyond traditional review platforms.',
-                tech: 'React, Rust (Tauri), AI Integration',
-                color: [0.2, 0.8, 0.4, 1.0],
-                github: 'https://github.com/akgauntlet/restaurant-delivery-checker',
-                video: 'https://www.loom.com/share/9ff5d910e04f45d99b3fca7316ed07a0'
-            },
-            {
-                title: 'SnapConnect',
-                description: 'Gaming-focused social platform with ephemeral messaging and rich profile customization. Features AI-powered conversation starters, achievement system with multiple rarity levels, and real-time disappearing messages. Supports cyberpunk/gaming aesthetics with multiple theme options.',
-                tech: 'React Native, Firebase, AI-powered',
-                color: [0.8, 0.4, 0.2, 1.0],
-                github: 'https://github.com/akgauntlet/snapconnect',
-                video: 'https://www.loom.com/share/74880222132a455ba52362fbbfe60769'
-            },
-            {
                 title: 'WordWise.ai',
                 description: 'AI-powered writing assistant and text analysis tool built with modern web technologies. Leverages Firebase for backend services and features a clean, responsive interface designed with TypeScript and React for robust, type-safe development.',
                 tech: 'React, TypeScript, Firebase',
@@ -189,12 +173,28 @@ class Portfolio {
                 video: 'https://app.slack.com/client/T086X0S5P1V/D091TM28QF3'
             },
             {
-                title: 'Roguelite Tactics',
-                description: 'Turn-based tactical roguelite game built with Godot 4.4, featuring procedural generation and strategic combat. Organized project architecture with dedicated systems for UI, enemies, players, and shader effects. Currently in active development with 57 commits.',
-                tech: 'Godot 4.4, GDScript, Procedural Generation',
-                color: [0.8, 0.8, 0.2, 1.0],
-                github: 'https://github.com/ntlblpm/roguelite-tactics',
-                video: 'https://vimeo.com/1105307847?share=copy#t=0'
+                title: 'Restaurant Delivery Checker',
+                description: 'AI-powered desktop app for analyzing restaurant delivery options with nutrition and review scoring. Combines real-time data from UberEats and Yelp with sentiment analysis to provide comprehensive restaurant evaluation beyond traditional review platforms.',
+                tech: 'React, Rust (Tauri), AI Integration',
+                color: [0.2, 0.8, 0.4, 1.0],
+                github: 'https://github.com/akgauntlet/restaurant-delivery-checker',
+                video: 'https://www.loom.com/share/9ff5d910e04f45d99b3fca7316ed07a0'
+            },
+            {
+                title: 'LibreOffice Writer Enhanced',
+                description: 'Open-source contribution to LibreOffice core, focusing on direct productivity enhancements to Writer. Part of a large community-driven project supporting multiple platforms including Windows, macOS, Linux, iOS, and Android.',
+                tech: 'C++, LibreOffice Core, Cross-platform',
+                color: [0.2, 0.4, 0.8, 1.0],
+                github: 'https://github.com/ntlblpm/core',
+                video: 'https://vimeo.com/1104959107'
+            },
+            {
+                title: 'SnapConnect',
+                description: 'Gaming-focused social platform with ephemeral messaging and rich profile customization. Features AI-powered conversation starters, achievement system with multiple rarity levels, and real-time disappearing messages. Supports cyberpunk/gaming aesthetics with multiple theme options.',
+                tech: 'React Native, Firebase, AI-powered',
+                color: [0.8, 0.4, 0.2, 1.0],
+                github: 'https://github.com/akgauntlet/snapconnect',
+                video: 'https://www.loom.com/share/74880222132a455ba52362fbbfe60769'
             }
         ];
         
