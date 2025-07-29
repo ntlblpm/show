@@ -709,8 +709,10 @@ class Portfolio {
             ctx.font = `${22}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
             
-            // Wrap description
-            const descMaxWidth = canvas.width * 0.75;
+            // Calculate description width based on target expanded card size to prevent word rearrangement
+            // Use the target width instead of current width to keep text layout stable
+            const targetCardWidth = this.expandedCard === card ? this.canvas.width * 0.8 : card.width;
+            const descMaxWidth = targetCardWidth * 0.75;
             const descLines = wrapText(card.project.description, descMaxWidth);
             const descLineHeight = 28;
             
