@@ -348,7 +348,7 @@ class Portfolio {
         const cols = 3;
         const padding = 80;
         const cardSpacing = 30;
-        const maxCardWidth = 350;
+        const maxCardWidth = 370;
         
         const availableWidth = this.canvas.width - padding * 2;
         const cardWidth = Math.min((availableWidth - cardSpacing * (cols - 1)) / cols, maxCardWidth);
@@ -405,7 +405,7 @@ class Portfolio {
         viewCodeBtn.style.cssText = `
             font-family: 'ProFontWindows', monospace;
             padding: 12px 24px;
-            font-size: 16px;
+            font-size: 18px;
             background: transparent;
             color: rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.8);
@@ -669,7 +669,7 @@ class Portfolio {
         };
         
         // Title - smoothly transition size and position with word wrapping
-        const titleSize = 28 + (42 - 28) * expandProgress;
+        const titleSize = 30 + (44 - 30) * expandProgress;
         ctx.font = `${titleSize}px 'ProFontWindows', monospace`;
         ctx.fillStyle = 'white';
         
@@ -679,14 +679,14 @@ class Portfolio {
         
         // For collapsed state, title starts at fixed position from top
         // For expanded state, move to 30% height (moved down from 20%)
-        const titleStartY = canvas.height * 0.37 + (canvas.height * 0.25 - canvas.height * 0.37) * expandProgress;
+        const titleStartY = (canvas.height * 0.37 - 5) + (canvas.height * 0.25 - (canvas.height * 0.37 - 5)) * expandProgress;
         
         titleLines.forEach((line, index) => {
             ctx.fillText(line, canvas.width / 2, titleStartY + index * titleLineHeight);
         });
         
         // Tech stack - smooth transition between collapsed and expanded positions
-        const techSize = 18 + (20 - 18) * expandProgress; // Slight size increase
+        const techSize = 20 + (22 - 20) * expandProgress; // Slight size increase
         ctx.font = `${techSize}px 'ProFontWindows', monospace`;
         ctx.fillStyle = `rgba(255, 255, 255, 0.8)`;
         
@@ -706,7 +706,7 @@ class Portfolio {
         
         // Description - fade in during expansion
         if (descriptionOpacity > 0) {
-            ctx.font = `${22}px 'ProFontWindows', monospace`;
+            ctx.font = `${24}px 'ProFontWindows', monospace`;
             ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * descriptionOpacity})`;
             
             // Calculate description width based on target expanded card size to prevent word rearrangement
