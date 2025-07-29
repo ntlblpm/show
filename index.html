@@ -51,12 +51,47 @@
             font-size: 20px;
             z-index: 10;
         }
+        
+        .expanded-buttons {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 20px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .expanded-buttons button {
+            font-family: 'ProFontWindows', monospace;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 2px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .expanded-buttons button:hover {
+            background: rgba(0, 128, 255, 0.8);
+            border-color: #00ccff;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
     <div class="loading" id="loading">Loading portfolio...</div>
     <canvas id="backgroundCanvas"></canvas>
     <canvas id="canvas"></canvas>
+    
+    <div class="expanded-buttons" id="expandedButtons">
+        <button id="viewCodeBtn">View Code</button>
+        <button id="watchDemoBtn">Watch Demo</button>
+    </div>
     
     <script src="portfolio.js"></script>
 </body>

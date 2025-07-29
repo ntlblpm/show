@@ -142,6 +142,11 @@ class Portfolio {
             return;
         }
         
+        // Get button elements
+        this.expandedButtons = document.getElementById('expandedButtons');
+        this.viewCodeBtn = document.getElementById('viewCodeBtn');
+        this.watchDemoBtn = document.getElementById('watchDemoBtn');
+        
         this.projects = [
             {
                 title: 'LibreOffice Writer Enhanced',
@@ -371,6 +376,19 @@ class Portfolio {
     setupEvents() {
         window.addEventListener('resize', () => this.resize());
         
+        // Button click handlers
+        this.viewCodeBtn.addEventListener('click', () => {
+            if (this.expandedCard && this.expandedCard.project.github) {
+                window.open(this.expandedCard.project.github, '_blank');
+            }
+        });
+        
+        this.watchDemoBtn.addEventListener('click', () => {
+            if (this.expandedCard && this.expandedCard.project.video) {
+                window.open(this.expandedCard.project.video, '_blank');
+            }
+        });
+        
         this.canvas.addEventListener('mousemove', (e) => {
             // Disable hover when animating or when a card is expanded
             if (this.isAnimating || this.expandedCard) {
@@ -427,6 +445,13 @@ class Portfolio {
                     // Clicking outside - close expanded card and reverse dissolve
                     this.lastExpandedCard = this.expandedCard;
                     this.expandedCard = null;
+                    
+                    // Hide buttons with animation
+                    this.expandedButtons.style.opacity = '0';
+                    setTimeout(() => {
+                        this.expandedButtons.style.display = 'none';
+                    }, 300);
+                    
                     const currentTime = this.animationTime;
                     this.cards.forEach(card => {
                         if (card !== this.lastExpandedCard) {
@@ -446,6 +471,13 @@ class Portfolio {
                 this.lastExpandedCard = this.hoveredCard;
                 // Remove hover state from the clicked card
                 this.expandedCard.targetHover = 0;
+                
+                // Show buttons with animation
+                this.expandedButtons.style.display = 'flex';
+                setTimeout(() => {
+                    this.expandedButtons.style.opacity = '1';
+                }, 50);
+                
                 this.cards.forEach(card => {
                     if (card !== this.expandedCard) {
                         card.targetCardDissolveProgress = 0.0; // Dissolve
