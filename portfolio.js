@@ -406,10 +406,24 @@ class Portfolio {
         });
         
         this.canvas.addEventListener('click', (e) => {
-            // Disable clicks when animating or when a card is already expanded
-            if (this.isAnimating || this.expandedCard) {
-                // Allow clicking outside to close
-                if (this.expandedCard && !this.hoveredCard) {
+            // Disable clicks when animating
+            if (this.isAnimating) {
+                return;
+            }
+            
+            // If a card is expanded
+            if (this.expandedCard) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * window.devicePixelRatio;
+                const y = (e.clientY - rect.top) * window.devicePixelRatio;
+                
+                // Check if click is inside the expanded card
+                const clickedInsideExpanded = x >= this.expandedCard.x && 
+                                            x <= this.expandedCard.x + this.expandedCard.width &&
+                                            y >= this.expandedCard.y && 
+                                            y <= this.expandedCard.y + this.expandedCard.height;
+                
+                if (!clickedInsideExpanded) {
                     // Clicking outside - close expanded card and reverse dissolve
                     this.lastExpandedCard = this.expandedCard;
                     this.expandedCard = null;
@@ -427,23 +441,18 @@ class Portfolio {
             }
             
             if (this.hoveredCard) {
-                if (this.expandedCard === this.hoveredCard) {
-                    // Clicking on the expanded card - do nothing (don't close it)
-                    return;
-                } else {
-                    // Opening a new card - dissolve others
-                    this.expandedCard = this.hoveredCard;
-                    this.lastExpandedCard = this.hoveredCard;
-                    // Remove hover state from the clicked card
-                    this.expandedCard.targetHover = 0;
-                    this.cards.forEach(card => {
-                        if (card !== this.expandedCard) {
-                            card.targetCardDissolveProgress = 0.0; // Dissolve
-                            card.cardDissolveStartTime = this.animationTime;
-                            card.cardDissolveDelay = 0; // No stagger for dissolving out
-                        }
-                    });
-                }
+                // Opening a new card - dissolve others
+                this.expandedCard = this.hoveredCard;
+                this.lastExpandedCard = this.hoveredCard;
+                // Remove hover state from the clicked card
+                this.expandedCard.targetHover = 0;
+                this.cards.forEach(card => {
+                    if (card !== this.expandedCard) {
+                        card.targetCardDissolveProgress = 0.0; // Dissolve
+                        card.cardDissolveStartTime = this.animationTime;
+                        card.cardDissolveDelay = 0; // No stagger for dissolving out
+                    }
+                });
                 this.updateCardPositions();
             }
         });
