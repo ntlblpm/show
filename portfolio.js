@@ -245,6 +245,9 @@ class Portfolio {
         this.textCtx = this.textCanvas.getContext('2d');
         this.textTexture = gl.createTexture();
         
+        // Texture cache to prevent memory leaks
+        this.textureCache = new Map();
+        
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     }
@@ -310,7 +313,6 @@ class Portfolio {
                 targetHover: 0,
                 expand: 0,
                 targetExpand: 0,
-                textTexture: null,
                 dissolveProgress: 0,
                 dissolveDelay: (col * 0.1 + row * 0.2), // Staggered appearance
                 pageOpenStarted: false,
@@ -578,10 +580,42 @@ class Portfolio {
         });
     }
     
+    generateTextureCacheKey(card) {
+        // Create a unique key based on card state that affects rendering
+        const expandRounded = Math.round(card.expand * 100) / 100; // Round to 2 decimal places
+        const key = `${card.project.title}_${expandRounded}_${card.width}x${card.height}`;
+        return key;
+    }
+    
     createTextTexture(card) {
+        const gl = this.gl;
+        const cacheKey = this.generateTextureCacheKey(card);
+        
+        // Check if texture exists in cache
+        if (this.textureCache.has(cacheKey)) {
+            const cachedTexture = this.textureCache.get(cacheKey);
+            gl.bindTexture(gl.TEXTURE_2D, cachedTexture);
+            return;
+        }
+        
+        // Clean up old textures if cache is getting too large
+        if (this.textureCache.size > 20) {
+            // Delete oldest entries
+            const entriesToDelete = [];
+            let count = 0;
+            for (const [key, texture] of this.textureCache) {
+                if (count++ < 5) {
+                    entriesToDelete.push(key);
+                    gl.deleteTexture(texture);
+                }
+            }
+            entriesToDelete.forEach(key => this.textureCache.delete(key));
+        }
+        
+        // Create new texture
+        const newTexture = gl.createTexture();
         const canvas = this.textCanvas;
         const ctx = this.textCtx;
-        const gl = this.gl;
         
         const scale = window.devicePixelRatio;
         canvas.width = card.width;
@@ -690,12 +724,15 @@ class Portfolio {
         }
         
         // Update texture
-        gl.bindTexture(gl.TEXTURE_2D, this.textTexture);
+        gl.bindTexture(gl.TEXTURE_2D, newTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        
+        // Store in cache
+        this.textureCache.set(cacheKey, newTexture);
     }
     
     animate() {
