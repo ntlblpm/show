@@ -142,10 +142,8 @@ class Portfolio {
             return;
         }
         
-        // Get button elements
-        this.expandedButtons = document.getElementById('expandedButtons');
-        this.viewCodeBtn = document.getElementById('viewCodeBtn');
-        this.watchDemoBtn = document.getElementById('watchDemoBtn');
+        // Button container will be created dynamically
+        this.buttonContainer = null;
         
         this.projects = [
             {
@@ -337,6 +335,11 @@ class Portfolio {
         gl.viewport(0, 0, canvas.width, canvas.height);
         
         this.updateCardPositions();
+        
+        // Update button positions if expanded
+        if (this.expandedCard && this.buttonContainer) {
+            this.positionCardButtons(this.expandedCard);
+        }
     }
     
     updateCardPositions() {
@@ -373,21 +376,112 @@ class Portfolio {
         });
     }
     
+    createCardButtons(card) {
+        // Remove any existing buttons first
+        this.removeCardButtons();
+        
+        // Create button container
+        this.buttonContainer = document.createElement('div');
+        this.buttonContainer.className = 'card-buttons';
+        this.buttonContainer.style.cssText = `
+            position: fixed;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        `;
+        
+        // Create View Code button
+        const viewCodeBtn = document.createElement('button');
+        viewCodeBtn.textContent = 'View Code';
+        viewCodeBtn.style.cssText = `
+            font-family: 'ProFontWindows', monospace;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.3s ease-out;
+        `;
+        
+        // Create Watch Demo button
+        const watchDemoBtn = document.createElement('button');
+        watchDemoBtn.textContent = 'Watch Demo';
+        watchDemoBtn.style.cssText = viewCodeBtn.style.cssText;
+        
+        // Add hover effects
+        [viewCodeBtn, watchDemoBtn].forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                btn.style.borderColor = '#00ccff';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.borderColor = 'white';
+            });
+        });
+        
+        // Add click handlers
+        viewCodeBtn.addEventListener('click', () => {
+            if (card.project.github) {
+                window.open(card.project.github, '_blank');
+            }
+        });
+        
+        watchDemoBtn.addEventListener('click', () => {
+            if (card.project.video) {
+                window.open(card.project.video, '_blank');
+            }
+        });
+        
+        // Add buttons to container
+        this.buttonContainer.appendChild(viewCodeBtn);
+        this.buttonContainer.appendChild(watchDemoBtn);
+        document.body.appendChild(this.buttonContainer);
+        
+        // Position buttons inside the expanded card
+        this.positionCardButtons(card);
+        
+        // Fade in buttons
+        setTimeout(() => {
+            this.buttonContainer.style.opacity = '1';
+        }, 50);
+    }
+    
+    removeCardButtons() {
+        if (this.buttonContainer) {
+            this.buttonContainer.style.opacity = '0';
+            setTimeout(() => {
+                if (this.buttonContainer && this.buttonContainer.parentNode) {
+                    this.buttonContainer.parentNode.removeChild(this.buttonContainer);
+                    this.buttonContainer = null;
+                }
+            }, 300);
+        }
+    }
+    
+    positionCardButtons(card) {
+        if (!this.buttonContainer) return;
+        
+        // Convert WebGL coordinates to screen coordinates
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = rect.width / this.canvas.width;
+        const scaleY = rect.height / this.canvas.height;
+        
+        // Position buttons at the bottom center of the expanded card
+        const centerX = rect.left + (card.x + card.width / 2) * scaleX;
+        const bottomY = rect.top + (card.y + card.height * 0.85) * scaleY;
+        
+        this.buttonContainer.style.left = `${centerX}px`;
+        this.buttonContainer.style.top = `${bottomY}px`;
+        this.buttonContainer.style.transform = 'translateX(-50%)';
+    }
+    
     setupEvents() {
         window.addEventListener('resize', () => this.resize());
         
-        // Button click handlers
-        this.viewCodeBtn.addEventListener('click', () => {
-            if (this.expandedCard && this.expandedCard.project.github) {
-                window.open(this.expandedCard.project.github, '_blank');
-            }
-        });
-        
-        this.watchDemoBtn.addEventListener('click', () => {
-            if (this.expandedCard && this.expandedCard.project.video) {
-                window.open(this.expandedCard.project.video, '_blank');
-            }
-        });
+        // Button click handlers will be added dynamically
         
         this.canvas.addEventListener('mousemove', (e) => {
             // Disable hover when animating or when a card is expanded
@@ -446,11 +540,8 @@ class Portfolio {
                     this.lastExpandedCard = this.expandedCard;
                     this.expandedCard = null;
                     
-                    // Hide buttons with animation
-                    this.expandedButtons.style.opacity = '0';
-                    setTimeout(() => {
-                        this.expandedButtons.style.display = 'none';
-                    }, 300);
+                    // Remove buttons
+                    this.removeCardButtons();
                     
                     const currentTime = this.animationTime;
                     this.cards.forEach(card => {
@@ -472,11 +563,8 @@ class Portfolio {
                 // Remove hover state from the clicked card
                 this.expandedCard.targetHover = 0;
                 
-                // Show buttons with animation
-                this.expandedButtons.style.display = 'flex';
-                setTimeout(() => {
-                    this.expandedButtons.style.opacity = '1';
-                }, 50);
+                // Create and show buttons for this card
+                this.createCardButtons(this.expandedCard);
                 
                 this.cards.forEach(card => {
                     if (card !== this.expandedCard) {
@@ -692,6 +780,18 @@ class Portfolio {
         // Clear lastExpandedCard when animation is complete
         if (this.lastExpandedCard && this.lastExpandedCard.expand < 0.01) {
             this.lastExpandedCard = null;
+        }
+        
+        // Update button positions if card is expanded and animating
+        if (this.expandedCard && this.buttonContainer) {
+            const isMoving = Math.abs(this.expandedCard.x - this.expandedCard.targetX) > 0.5 ||
+                           Math.abs(this.expandedCard.y - this.expandedCard.targetY) > 0.5 ||
+                           Math.abs(this.expandedCard.width - this.expandedCard.targetWidth) > 0.5 ||
+                           Math.abs(this.expandedCard.height - this.expandedCard.targetHeight) > 0.5;
+            
+            if (isMoving) {
+                this.positionCardButtons(this.expandedCard);
+            }
         }
         
         this.render();
