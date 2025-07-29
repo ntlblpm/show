@@ -110,6 +110,11 @@ const fragmentShaderSource = `
         // Create dissolve mask
         float dissolveMask = smoothstep(dissolveAmount - edge_width, dissolveAmount + edge_width, noiseValue);
         
+        // Ensure full opacity when dissolve is complete
+        if (u_dissolveProgress >= 0.99) {
+            dissolveMask = 1.0;
+        }
+        
         // Edge glow effect
         float edgeGlow = 1.0 - smoothstep(0.0, edge_width * 2.0, abs(noiseValue - dissolveAmount));
         vec3 edgeColor = vec3(0.3, 0.5, 1.0) * edgeGlow * 2.0;
