@@ -168,7 +168,7 @@ class Portfolio {
                 tech: 'React, TypeScript, Firebase',
                 color: [0.4, 0.2, 0.8, 1.0],
                 github: 'https://github.com/akgauntlet/wordwise.ai',
-                video: 'https://app.slack.com/client/T086X0S5P1V/D091TM28QF3'
+                video: 'https://www.loom.com/share/7adde2d4defb43d78a95ae51c2984e9b'
             },
             {
                 title: 'Restaurant Delivery Checker',
